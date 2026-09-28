@@ -148,6 +148,8 @@ button, input, select { font: inherit; color: inherit; }
 .check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; cursor: pointer; }
 .check input { margin-top: 3px; accent-color: var(--accent); }
 .check small { display: block; color: var(--muted); font-size: 11px; }
+.linkbtn { justify-self: start; border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; cursor: pointer; text-decoration: underline; }
+.hint.warn { color: var(--warn); }
 .notice { font-size: 12px; padding: 8px 10px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
 .rates { font-size: 12px; color: var(--muted); }
 .rates summary { cursor: pointer; }
@@ -276,6 +278,10 @@ button, input, select { font: inherit; color: inherit; }
             </select>
           </div>
           <div class="field">
+            <label for="b-pref">都道府県</label>
+            <select id="b-pref"></select>
+          </div>
+          <div class="field">
             <label for="b-emp">従業員数</label>
             <div class="ctl"><input type="number" id="b-emp" min="1" step="1" inputmode="numeric"><span class="unit">人</span></div>
           </div>
@@ -294,6 +300,10 @@ button, input, select { font: inherit; color: inherit; }
           <div class="field">
             <label for="b-region">地域別最低賃金</label>
             <div class="ctl"><input type="number" id="b-region" min="0" step="1" inputmode="numeric"><span class="unit">円/時</span></div>
+          </div>
+          <div class="field full">
+            <div class="hint" id="region-hint"></div>
+            <button type="button" class="linkbtn" id="btn-region-auto" hidden>都道府県の金額に戻す</button>
           </div>
           <div class="field full">
             <label for="b-corptax">年間の法人税額（目安）</label>
@@ -402,6 +412,28 @@ button, input, select { font: inherit; color: inherit; }
     2025: { kenpo: 5.0, kousei: 9.15, kyoshutsu: 0.36, shienkin: 0, koyou: { general: 0.9, agri: 1.0, construction: 1.1 } },
     2026: { kenpo: 4.95, kousei: 9.15, kyoshutsu: 0.36, shienkin: 0.115, koyou: { general: 0.85, agri: 0.95, construction: 1.05 } }
   };
+
+  // 地域別最低賃金（円/時）。[都道府県, 令和7年度, 令和8年度]。令和8年度は答申額、null は未登録（令和7年度額で代用）
+  var PREFS = [
+    ["北海道", 1075, 1131], ["青森県", 1029, 1090], ["岩手県", 1031, null], ["宮城県", 1038, null], ["秋田県", 1031, null],
+    ["山形県", 1032, null], ["福島県", 1033, null], ["茨城県", 1074, null], ["栃木県", 1068, null], ["群馬県", 1063, null],
+    ["埼玉県", 1141, null], ["千葉県", 1140, null], ["東京都", 1226, 1280], ["神奈川県", 1225, 1279], ["新潟県", 1050, null],
+    ["富山県", 1062, null], ["石川県", 1054, null], ["福井県", 1053, null], ["山梨県", 1052, null], ["長野県", 1061, null],
+    ["岐阜県", 1065, null], ["静岡県", 1097, null], ["愛知県", 1140, null], ["三重県", 1087, 1143], ["滋賀県", 1080, 1136],
+    ["京都府", 1122, 1180], ["大阪府", 1177, 1231], ["兵庫県", 1116, 1172], ["奈良県", 1051, 1107], ["和歌山県", 1045, 1101],
+    ["鳥取県", 1030, null], ["島根県", 1033, null], ["岡山県", 1047, null], ["広島県", 1085, null], ["山口県", 1043, null],
+    ["徳島県", 1046, null], ["香川県", 1036, null], ["愛媛県", 1033, null], ["高知県", 1023, null], ["福岡県", 1057, null],
+    ["佐賀県", 1030, null], ["長崎県", 1031, null], ["熊本県", 1034, null], ["大分県", 1035, null], ["宮崎県", 1023, 1085],
+    ["鹿児島県", 1026, null], ["沖縄県", 1023, 1086]
+  ];
+  function prefWage(name, year) {
+    var row = PREFS.filter(function (r) { return r[0] === name; })[0] || PREFS[26];
+    if (String(year) === "2026") {
+      if (row[2] != null) return { wage: row[2], src: row[0] + "・令和8年度の答申額（2026年10〜12月に順次発効）", ok: true };
+      return { wage: row[1], src: row[0] + "の令和8年度額は未登録のため令和7年度額を表示中。最新額を手入力してください", ok: false };
+    }
+    return { wage: row[1], src: row[0] + "・令和7年度の地域別最低賃金", ok: true };
+  }
 
   var CATS = [
     { id: "josei", name: "助成金", sub: "厚生労働省・要件を満たせば支給", color: "var(--c-josei)" },
@@ -652,8 +684,8 @@ button, input, select { font: inherit; color: inherit; }
   ];
 
   /* ---------- 状態 ---------- */
-  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, minwage: 1150, region: 1121, corptax: 300, raise: 100, target: 3 };
-  var KEY = "chinage-sim-v1";
+  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100, target: 3 };
+  var KEY = "chinage-sim-v2";
   var state = load();
 
   function fresh() { return { base: Object.assign({}, DEFAULT_BASE), en: {}, p: {}, opts: { withsi: false, expected: false } }; }
@@ -690,11 +722,14 @@ button, input, select { font: inherit; color: inherit; }
       ["労災保険（" + ind.label + "の目安）", ind.rousai]
     ];
     var siRate = siParts.reduce(function (s, x) { return s + x[1]; }, 0) / 100;
-    var minWage = num(b.minwage, 0), region = num(b.region, 0);
+    var auto = prefWage(b.pref, b.year);
+    var regionManual = b.region !== "" && b.region != null;
+    var minWage = num(b.minwage, 0), region = regionManual ? num(b.region, 0) : auto.wage;
     var salary = num(b.salary, 0) * MAN;
     return {
       ind: ind, year: b.year, emp: emp, fixed: fixed, salary: salary,
       payroll: emp * salary, raise: num(b.raise, 0) * MAN, corpTax: num(b.corptax, 0) * MAN,
+      pref: b.pref, regionAuto: auto, regionManual: regionManual,
       minWage: minWage, region: region, nearMin: minWage > 0 && minWage - region <= 50,
       sme: emp <= ind.sme, small: emp <= ind.small, siRate: siRate, siParts: siParts,
       target: Math.max(0.1, num(b.target, 3))
@@ -739,7 +774,10 @@ button, input, select { font: inherit; color: inherit; }
   function buildForm() {
     var sel = $("b-industry");
     Object.keys(INDUSTRIES).forEach(function (k) { var o = el("option", null, INDUSTRIES[k].label); o.value = k; sel.appendChild(o); });
-    var map = { industry: "b-industry", year: "b-year", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
+    var ps = $("b-pref");
+    PREFS.forEach(function (r) { var o = el("option", null, r[0]); o.value = r[0]; ps.appendChild(o); });
+    $("btn-region-auto").addEventListener("click", function () { state.base.region = ""; $("b-region").value = ""; update(); });
+    var map = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
     Object.keys(map).forEach(function (k) {
       var input = $(map[k]);
       input.value = state.base[k];
@@ -825,6 +863,17 @@ button, input, select { font: inherit; color: inherit; }
     if (num(state.base.fixed, 0) > c.emp) notices.push("有期・パートの人数が従業員数を超えています。");
     $("sme-notice").hidden = notices.length === 0; $("sme-notice").textContent = notices.join(" ");
 
+    // 地域別最低賃金
+    var rIn = $("b-region"), rHint = $("region-hint");
+    if (!c.regionManual && document.activeElement !== rIn) rIn.value = c.region;
+    $("btn-region-auto").hidden = !c.regionManual;
+    var hints = [c.regionManual ? "手入力の金額を使用中（" + c.regionAuto.src.split("・")[0] + "の登録額：" + fmtN(c.regionAuto.wage) + "円）" : c.regionAuto.src];
+    var bad = !c.regionManual && !c.regionAuto.ok;
+    if (c.minWage > 0 && c.minWage < c.region) { hints.push("事業場内最低賃金が地域別最低賃金を下回っています。発効日以降は引上げが必須です"); bad = true; }
+    else if (c.minWage > 0) hints.push("差額 " + fmtN(c.minWage - c.region) + "円" + (c.nearMin ? "（50円以内：業務改善助成金の対象）" : "（50円超：業務改善助成金の対象外）"));
+    rHint.textContent = hints.join("。");
+    rHint.classList.toggle("warn", bad);
+
     $("raise-hint").textContent = "1人あたり年" + fmtMan(c.raise / c.emp) + "・給与総額の" + fmtPct(c.payroll ? c.raise / c.payroll : 0) + "アップ。会社負担の社保込みで" + fmtMan(c.raise * (1 + c.siRate)) + "。";
 
     var tbl = $("rate-table"); tbl.textContent = "";
@@ -888,7 +937,8 @@ button, input, select { font: inherit; color: inherit; }
   function summaryText() {
     var R = last, c = R.c;
     var lines = [];
-    lines.push("【賃上げ原資シミュレーション】" + c.year + "年度 / " + c.ind.label + " / 従業員" + c.emp + "人");
+    lines.push("【賃上げ原資シミュレーション】" + c.year + "年度 / " + c.pref + " / " + c.ind.label + " / 従業員" + c.emp + "人");
+    lines.push("地域別最低賃金：" + fmtN(c.region) + "円 / 事業場内最低賃金：" + fmtN(c.minWage) + "円");
     lines.push("年間固定費アップ：" + fmtMan(R.cost) + (state.opts.withsi ? "（社保込み）" : ""));
     lines.push("初年度インパクト：" + fmtMan(R.year1) + "（" + R.mult.toFixed(1) + "倍）" + (state.opts.expected ? "※採択見込み反映" : ""));
     lines.push("うち毎年の継続効果：" + fmtMan(R.annual) + " / 3年累計 " + R.mult3.toFixed(1) + "倍");
@@ -925,7 +975,7 @@ button, input, select { font: inherit; color: inherit; }
   $("btn-reset").addEventListener("click", function () {
     state = fresh();
     Object.keys(state.base).forEach(function (k) {
-      var ids = { industry: "b-industry", year: "b-year", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
+      var ids = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
       $(ids[k]).value = state.base[k];
     });
     $("o-withsi").checked = false; $("o-expected").checked = false;
