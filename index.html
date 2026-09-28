@@ -271,6 +271,17 @@ button, input, select { font: inherit; color: inherit; }
             <select id="b-industry"></select>
           </div>
           <div class="field">
+            <label for="b-form">事業形態</label>
+            <select id="b-form">
+              <option value="corp">法人</option>
+              <option value="sole">個人事業主</option>
+            </select>
+          </div>
+          <div class="field" id="f-capital">
+            <label for="b-capital">資本金</label>
+            <div class="ctl"><input type="number" id="b-capital" min="0" step="100" inputmode="numeric"><span class="unit">万円</span></div>
+          </div>
+          <div class="field">
             <label for="b-year">年度</label>
             <select id="b-year">
               <option value="2025">2025年度（R7）</option>
@@ -306,9 +317,9 @@ button, input, select { font: inherit; color: inherit; }
             <button type="button" class="linkbtn" id="btn-region-auto" hidden>都道府県の金額に戻す</button>
           </div>
           <div class="field full">
-            <label for="b-corptax">年間の法人税額（目安）</label>
+            <label for="b-corptax" id="l-corptax">年間の法人税額（目安）</label>
             <div class="ctl"><input type="number" id="b-corptax" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
-            <div class="hint">賃上げ促進税制の控除上限（法人税額の20%）に使います。赤字の場合は0。</div>
+            <div class="hint" id="corptax-hint">賃上げ促進税制の控除上限（法人税額の20%）に使います。赤字の場合は0。</div>
           </div>
         </div>
         <div id="sme-notice" class="notice" hidden></div>
@@ -321,6 +332,11 @@ button, input, select { font: inherit; color: inherit; }
             <label for="b-raise">賃上げによる年間固定費アップ</label>
             <div class="ctl"><input type="number" id="b-raise" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
             <div class="hint" id="raise-hint"></div>
+          </div>
+          <div class="field full">
+            <label for="b-prevpay">前年度の給与総額（任意）</label>
+            <div class="ctl"><input type="number" id="b-prevpay" min="0" step="100" inputmode="numeric"><span class="unit">万円</span></div>
+            <div class="hint" id="prevpay-hint"></div>
           </div>
         </div>
       </section>
@@ -388,19 +404,19 @@ button, input, select { font: inherit; color: inherit; }
   "use strict";
 
   /* ---------- マスタ ---------- */
-  // sme: 中小企業の従業員数基準 / small: 小規模事業者の基準 / emp: 雇用保険の事業区分 / rousai: 労災保険率(%)の目安
+  // cap: 中小企業の資本金基準(万円) / sme: 中小企業の従業員数基準 / small: 小規模事業者の基準 / emp: 雇用保険の事業区分 / rousai: 労災保険率(%)の目安
   var INDUSTRIES = {
-    manufacturing: { label: "製造業", sme: 300, small: 20, emp: "general", rousai: 0.45, aiHours: 8, aiHint: "受発注入力・生産日報・見積作成" },
-    construction:  { label: "建設業", sme: 300, small: 20, emp: "construction", rousai: 0.95, aiHours: 10, aiHint: "見積・施工写真整理・安全書類" },
-    transport:     { label: "運輸業", sme: 300, small: 20, emp: "general", rousai: 0.85, aiHours: 8, aiHint: "配車計画・運行日報・請求処理" },
-    wholesale:     { label: "卸売業", sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 10, aiHint: "受注入力・在庫照会・請求書処理" },
-    retail:        { label: "小売業", sme: 50, small: 5, emp: "general", rousai: 0.3, aiHours: 6, aiHint: "発注予測・シフト作成・EC商品登録" },
-    restaurant:    { label: "飲食業", sme: 50, small: 5, emp: "general", rousai: 0.3, aiHours: 6, aiHint: "シフト作成・発注・予約対応" },
-    hotel:         { label: "宿泊業", sme: 100, small: 20, emp: "general", rousai: 0.3, aiHours: 8, aiHint: "予約管理・問合せ対応・多言語案内" },
-    care:          { label: "医療・介護・福祉", sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 10, aiHint: "介護記録・請求業務・シフト作成" },
-    it:            { label: "情報通信業", sme: 300, small: 20, emp: "general", rousai: 0.25, aiHours: 12, aiHint: "議事録・資料作成・コードレビュー" },
-    service:       { label: "サービス業（その他）", sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 8, aiHint: "問合せ対応・書類作成・経理処理" },
-    agri:          { label: "農林水産業", sme: 300, small: 20, emp: "agri", rousai: 1.3, aiHours: 6, aiHint: "生産記録・出荷管理・書類作成" }
+    manufacturing: { label: "製造業", cap: 30000, sme: 300, small: 20, emp: "general", rousai: 0.45, aiHours: 8, aiHint: "受発注入力・生産日報・見積作成" },
+    construction:  { label: "建設業", cap: 30000, sme: 300, small: 20, emp: "construction", rousai: 0.95, aiHours: 10, aiHint: "見積・施工写真整理・安全書類" },
+    transport:     { label: "運輸業", cap: 30000, sme: 300, small: 20, emp: "general", rousai: 0.85, aiHours: 8, aiHint: "配車計画・運行日報・請求処理" },
+    wholesale:     { label: "卸売業", cap: 10000, sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 10, aiHint: "受注入力・在庫照会・請求書処理" },
+    retail:        { label: "小売業", cap: 5000, sme: 50, small: 5, emp: "general", rousai: 0.3, aiHours: 6, aiHint: "発注予測・シフト作成・EC商品登録" },
+    restaurant:    { label: "飲食業", cap: 5000, sme: 50, small: 5, emp: "general", rousai: 0.3, aiHours: 6, aiHint: "シフト作成・発注・予約対応" },
+    hotel:         { label: "宿泊業", cap: 5000, sme: 100, small: 20, emp: "general", rousai: 0.3, aiHours: 8, aiHint: "予約管理・問合せ対応・多言語案内" },
+    care:          { label: "医療・介護・福祉", cap: 5000, sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 10, aiHint: "介護記録・請求業務・シフト作成" },
+    it:            { label: "情報通信業", cap: 30000, sme: 300, small: 20, emp: "general", rousai: 0.25, aiHours: 12, aiHint: "議事録・資料作成・コードレビュー" },
+    service:       { label: "サービス業（その他）", cap: 5000, sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 8, aiHint: "問合せ対応・書類作成・経理処理" },
+    agri:          { label: "農林水産業", cap: 30000, sme: 300, small: 20, emp: "agri", rousai: 1.3, aiHours: 6, aiHint: "生産記録・出荷管理・書類作成" }
   };
 
   // 会社負担分の料率(%)
@@ -639,9 +655,11 @@ button, input, select { font: inherit; color: inherit; }
         var base = inc >= 0.025 ? 30 : inc >= 0.015 ? 15 : 0;
         var rate = base === 0 ? 0 : base + (p.edu === "yes" ? 10 : 0) + (p.kurumin === "yes" ? 5 : 0);
         var raw = c.raise * rate / 100, cap = c.corpTax * 0.2;
-        var r = { amount: Math.min(raw, cap), basis: "賃上げ額" + fmtMan(c.raise) + "×" + rate + "%（給与総額の増加率" + fmtPct(inc) + "、上限は法人税額の20%）", note: "赤字の年は控除額を5年間繰り越し可能。" };
+        var taxName = c.corp ? "法人税額" : "所得税額";
+        var r = { amount: Math.min(raw, cap), basis: "賃上げ額" + fmtMan(c.raise) + "×" + rate + "%（給与総額の増加率" + fmtPct(inc) + "、上限は" + taxName + "の20%）", note: (c.corp ? "" : "個人事業主は所得税から控除。") + "赤字の年は控除額を5年間繰り越し可能。" };
         if (base === 0) r.warn = "給与総額の増加率1.5%以上が必要";
-        else if (raw > cap) r.warn = "法人税額20%の上限で頭打ち";
+        else if (raw > cap) r.warn = taxName + "20%の上限で頭打ち";
+        if (c.corp && c.capital > 10000 * MAN) { r.amount = 0; r.warn = "中小企業向けは資本金1億円以下が対象"; }
         return r;
       }
     },
@@ -659,7 +677,9 @@ button, input, select { font: inherit; color: inherit; }
         var n = Math.round(c.emp * p.join / 100);
         var save = n * p.monthly * 12 * c.siRate;
         var amt = Math.max(0, save - p.fee * 12);
-        return { amount: amt, basis: n + "人×月" + fmtN(p.monthly) + "円×12か月×会社負担率" + fmtPct(c.siRate) + "−運営費", note: "給与の一部を掛金に振り替え、社会保険料の算定対象から外す。従業員側も社保・税が軽減。" };
+        var r = { amount: amt, basis: n + "人×月" + fmtN(p.monthly) + "円×12か月×会社負担率" + fmtPct(c.siRate) + "−運営費", note: "給与の一部を掛金に振り替え、社会保険料の算定対象から外す。従業員側も社保・税が軽減。" };
+        if (!c.corp && c.emp < 5) r.warn = "個人事業主（5人未満）は厚生年金の任意適用が前提";
+        return r;
       }
     },
 
@@ -681,7 +701,7 @@ button, input, select { font: inherit; color: inherit; }
   ];
 
   /* ---------- 状態 ---------- */
-  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100 };
+  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, form: "corp", capital: 1000, prevpay: "", pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100 };
   var KEY = "chinage-sim-v2";
   var state = load();
 
@@ -723,12 +743,16 @@ button, input, select { font: inherit; color: inherit; }
     var regionManual = b.region !== "" && b.region != null;
     var minWage = num(b.minwage, 0), region = regionManual ? num(b.region, 0) : auto.wage;
     var salary = num(b.salary, 0) * MAN;
+    var corp = b.form !== "sole";
+    var capital = num(b.capital, 0) * MAN;
+    var payrollManual = b.prevpay !== "" && b.prevpay != null && num(b.prevpay, 0) > 0;
     return {
       ind: ind, year: b.year, emp: emp, fixed: fixed, salary: salary,
-      payroll: emp * salary, raise: num(b.raise, 0) * MAN, corpTax: num(b.corptax, 0) * MAN,
+      corp: corp, capital: capital, payrollManual: payrollManual,
+      payroll: payrollManual ? num(b.prevpay, 0) * MAN : emp * salary, raise: num(b.raise, 0) * MAN, corpTax: num(b.corptax, 0) * MAN,
       pref: b.pref, regionAuto: auto, regionManual: regionManual,
       minWage: minWage, region: region, nearMin: minWage > 0 && minWage - region <= 50,
-      sme: emp <= ind.sme, small: emp <= ind.small, siRate: siRate, siParts: siParts
+      sme: emp <= ind.sme || (corp && capital <= ind.cap * MAN), small: emp <= ind.small, siRate: siRate, siParts: siParts
     };
   }
 
@@ -773,7 +797,7 @@ button, input, select { font: inherit; color: inherit; }
     var ps = $("b-pref");
     PREFS.forEach(function (r) { var o = el("option", null, r[0]); o.value = r[0]; ps.appendChild(o); });
     $("btn-region-auto").addEventListener("click", function () { state.base.region = ""; $("b-region").value = ""; update(); });
-    var map = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
+    var map = { industry: "b-industry", form: "b-form", capital: "b-capital", prevpay: "b-prevpay", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
     Object.keys(map).forEach(function (k) {
       var input = $(map[k]);
       input.value = state.base[k];
@@ -855,9 +879,16 @@ button, input, select { font: inherit; color: inherit; }
 
     // 企業情報の注意
     var notices = [];
-    if (!c.sme) notices.push(c.ind.label + "の中小企業基準（" + c.ind.sme + "人以下）を超えています。多くの補助金・助成金が対象外または別枠です。");
+    if (!c.sme) notices.push(c.ind.label + "の中小企業基準（" + (c.corp ? "資本金" + (c.ind.cap >= 10000 ? fmtN(c.ind.cap / 10000) + "億円" : fmtN(c.ind.cap) + "万円") + "以下または" : "") + "従業員" + c.ind.sme + "人以下）を超えています。多くの補助金・助成金が対象外または別枠です。");
     if (num(state.base.fixed, 0) > c.emp) notices.push("有期・パートの人数が従業員数を超えています。");
     $("sme-notice").hidden = notices.length === 0; $("sme-notice").textContent = notices.join(" ");
+
+    // 事業形態・前年度給与総額
+    $("f-capital").hidden = !c.corp;
+    $("l-corptax").textContent = c.corp ? "年間の法人税額（目安）" : "年間の所得税額（目安）";
+    $("corptax-hint").textContent = "賃上げ促進税制の控除上限（" + (c.corp ? "法人税額" : "所得税額") + "の20%）に使います。赤字の場合は0。";
+    $("b-prevpay").placeholder = fmtN(Math.round(c.emp * c.salary / MAN));
+    $("prevpay-hint").textContent = c.payrollManual ? "入力値で給与総額の増加率を計算しています。" : "空欄なら「従業員数×平均年収」（" + fmtMan(c.emp * c.salary) + "）で計算します。実額が小さいほど増加率が上がり、税額控除が大きくなります。";
 
     // 地域別最低賃金
     var rIn = $("b-region"), rHint = $("region-hint");
@@ -934,6 +965,7 @@ button, input, select { font: inherit; color: inherit; }
     var R = last, c = R.c;
     var lines = [];
     lines.push("【賃上げ原資シミュレーション】" + c.year + "年度 / " + c.pref + " / " + c.ind.label + " / 従業員" + c.emp + "人");
+    lines.push((c.corp ? "法人・資本金" + fmtMan(c.capital) : "個人事業主") + (c.sme ? "（中小企業）" : ""));
     lines.push("地域別最低賃金：" + fmtN(c.region) + "円 / 事業場内最低賃金：" + fmtN(c.minWage) + "円");
     lines.push("年間固定費アップ：" + fmtMan(R.cost) + (state.opts.withsi ? "（社保込み）" : ""));
     lines.push("初年度インパクト：" + fmtMan(R.year1) + "（" + R.mult.toFixed(1) + "倍）" + (state.opts.expected ? "※採択見込み反映" : ""));
@@ -971,7 +1003,7 @@ button, input, select { font: inherit; color: inherit; }
   $("btn-reset").addEventListener("click", function () {
     state = fresh();
     Object.keys(state.base).forEach(function (k) {
-      var ids = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
+      var ids = { industry: "b-industry", form: "b-form", capital: "b-capital", prevpay: "b-prevpay", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
       $(ids[k]).value = state.base[k];
     });
     $("o-withsi").checked = false; $("o-expected").checked = false;
