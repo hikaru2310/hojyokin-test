@@ -322,10 +322,6 @@ button, input, select { font: inherit; color: inherit; }
             <div class="ctl"><input type="number" id="b-raise" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
             <div class="hint" id="raise-hint"></div>
           </div>
-          <div class="field">
-            <label for="b-target">目標倍率</label>
-            <div class="ctl"><input type="number" id="b-target" min="0.5" step="0.5" inputmode="decimal"><span class="unit">倍</span></div>
-          </div>
         </div>
       </section>
 
@@ -444,6 +440,7 @@ button, input, select { font: inherit; color: inherit; }
   ];
 
   var MAN = 10000;
+  var TARGET = 3; // 提案の目安：初年度インパクトが年間固定費アップの3倍
   function yesNo(def) { return { type: "sel", options: [["yes", "あり"], ["no", "なし"]], def: function () { return def; } }; }
   function adopt(def) { return { id: "adopt", label: "採択見込み", unit: "%", step: 5, def: function () { return def; } }; }
   function byEmp(emp, table) { for (var i = 0; i < table.length; i++) { if (emp <= table[i][0]) return table[i]; } return table[table.length - 1]; }
@@ -684,7 +681,7 @@ button, input, select { font: inherit; color: inherit; }
   ];
 
   /* ---------- 状態 ---------- */
-  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100, target: 3 };
+  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100 };
   var KEY = "chinage-sim-v2";
   var state = load();
 
@@ -731,8 +728,7 @@ button, input, select { font: inherit; color: inherit; }
       payroll: emp * salary, raise: num(b.raise, 0) * MAN, corpTax: num(b.corptax, 0) * MAN,
       pref: b.pref, regionAuto: auto, regionManual: regionManual,
       minWage: minWage, region: region, nearMin: minWage > 0 && minWage - region <= 50,
-      sme: emp <= ind.sme, small: emp <= ind.small, siRate: siRate, siParts: siParts,
-      target: Math.max(0.1, num(b.target, 3))
+      sme: emp <= ind.sme, small: emp <= ind.small, siRate: siRate, siParts: siParts
     };
   }
 
@@ -777,7 +773,7 @@ button, input, select { font: inherit; color: inherit; }
     var ps = $("b-pref");
     PREFS.forEach(function (r) { var o = el("option", null, r[0]); o.value = r[0]; ps.appendChild(o); });
     $("btn-region-auto").addEventListener("click", function () { state.base.region = ""; $("b-region").value = ""; update(); });
-    var map = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
+    var map = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
     Object.keys(map).forEach(function (k) {
       var input = $(map[k]);
       input.value = state.base[k];
@@ -903,10 +899,10 @@ button, input, select { font: inherit; color: inherit; }
 
     // サマリー
     $("r-mult").textContent = R.mult.toFixed(1);
-    var ok = R.mult >= c.target;
+    var ok = R.mult >= TARGET;
     var st = $("r-status");
     st.className = "status " + (ok ? "ok" : "ng");
-    st.textContent = ok ? "目標 " + fmtN(c.target) + "倍を達成" : "目標 " + fmtN(c.target) + "倍まで あと" + fmtMan(c.target * R.cost - R.year1);
+    st.textContent = ok ? "目標 " + fmtN(TARGET) + "倍を達成" : "目標 " + fmtN(TARGET) + "倍まで あと" + fmtMan(TARGET * R.cost - R.year1);
     $("r-cost").textContent = fmtMan(R.cost);
     $("r-cost-s").textContent = state.opts.withsi ? "賃上げ額＋会社負担の社保" : "賃上げ額（社保込み " + fmtMan(c.raise * (1 + c.siRate)) + "）";
     $("r-year1").textContent = fmtMan(R.year1);
@@ -916,7 +912,7 @@ button, input, select { font: inherit; color: inherit; }
     $("r-mult3-s").textContent = fmtMan(R.once + R.annual * 3) + " ÷ " + fmtMan(R.cost * 3);
 
     // バー
-    var max = Math.max(R.cost * c.target, R.year1, 1) * 1.08;
+    var max = Math.max(R.cost * TARGET, R.year1, 1) * 1.08;
     var w = function (v) { return (v / max * 100) + "%"; };
     $("bar-cost").style.width = w(R.cost);
     $("bar-cost-v").style.left = w(R.cost); $("bar-cost-v").textContent = fmtMan(R.cost);
@@ -927,10 +923,10 @@ button, input, select { font: inherit; color: inherit; }
     // 目標線：トラック基準で位置合わせ
     var area = $("bars-area"), track = $("impact-track");
     var ax = area.getBoundingClientRect(), tx = track.getBoundingClientRect();
-    var x = (tx.left - ax.left) + tx.width * (R.cost * c.target / max);
+    var x = (tx.left - ax.left) + tx.width * (R.cost * TARGET / max);
     $("target-line").style.left = x + "px";
     $("target-label").style.left = x + "px";
-    $("target-label").textContent = "目標 " + fmtN(c.target) + "倍（" + fmtMan(R.cost * c.target) + "）";
+    $("target-label").textContent = "目標 " + fmtN(TARGET) + "倍（" + fmtMan(R.cost * TARGET) + "）";
   }
 
   /* ---------- サマリーのコピー ---------- */
@@ -975,7 +971,7 @@ button, input, select { font: inherit; color: inherit; }
   $("btn-reset").addEventListener("click", function () {
     state = fresh();
     Object.keys(state.base).forEach(function (k) {
-      var ids = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
+      var ids = { industry: "b-industry", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
       $(ids[k]).value = state.base[k];
     });
     $("o-withsi").checked = false; $("o-expected").checked = false;
