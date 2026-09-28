@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>賃上げ原資シミュレーター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@700&display=swap">
+<style>
+:root {
+  --paper: #F2F4F7;
+  --surface: #FFFFFF;
+  --surface-2: #F7F8FA;
+  --ink: #15212E;
+  --muted: #586676;
+  --line: #D8DEE6;
+  --accent: #1F4E8C;
+  --accent-ink: #FFFFFF;
+  --focus: #2F6FD0;
+  --good: #23784A;
+  --good-bg: #E3F2E9;
+  --warn: #9A4B08;
+  --warn-bg: #FBEEDD;
+  --c-subsidy: #2F5DA8;
+  --c-josei: #22857A;
+  --c-tax: #B08322;
+  --c-social: #87589B;
+  --c-ai: #C8603F;
+  --c-cost: #5F6B78;
+  --shadow: 0 1px 2px rgba(21,33,46,.06), 0 4px 16px rgba(21,33,46,.05);
+  --f-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  --f-display: "BIZ UDPMincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0F151C;
+    --surface: #17202A;
+    --surface-2: #1C2733;
+    --ink: #E6ECF2;
+    --muted: #9AA8B7;
+    --line: #2B3846;
+    --accent: #7FA8E6;
+    --accent-ink: #0F151C;
+    --focus: #9BBDF0;
+    --good: #7BCB9C;
+    --good-bg: #173226;
+    --warn: #F0B070;
+    --warn-bg: #3A2814;
+    --c-subsidy: #6F97DB;
+    --c-josei: #4FB8AA;
+    --c-tax: #D6AA4A;
+    --c-social: #B58BC8;
+    --c-ai: #E58C6C;
+    --c-cost: #8C99A7;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0F151C;
+  --surface: #17202A;
+  --surface-2: #1C2733;
+  --ink: #E6ECF2;
+  --muted: #9AA8B7;
+  --line: #2B3846;
+  --accent: #7FA8E6;
+  --accent-ink: #0F151C;
+  --focus: #9BBDF0;
+  --good: #7BCB9C;
+  --good-bg: #173226;
+  --warn: #F0B070;
+  --warn-bg: #3A2814;
+  --c-subsidy: #6F97DB;
+  --c-josei: #4FB8AA;
+  --c-tax: #D6AA4A;
+  --c-social: #B58BC8;
+  --c-ai: #E58C6C;
+  --c-cost: #8C99A7;
+  --shadow: none;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 0 48px;
+}
+.num { font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.wrap { max-width: 1240px; margin: 0 auto; }
+
+/* Header */
+.top {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+  gap: 12px 24px; padding-block: 24px 20px;
+}
+.brand .eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+.brand h1 {
+  font-family: var(--f-display); font-weight: 700; font-size: 26px; line-height: 1.3;
+  margin: 2px 0 0; text-wrap: balance;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 6px;
+  padding: 8px 14px; cursor: pointer; font-size: 13px;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.08); }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Input panel */
+.panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 18px; display: grid; gap: 20px; box-shadow: var(--shadow);
+}
+@media (min-width: 901px) { .panel { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow-y: auto; } }
+.panel h2 {
+  font-size: 12px; letter-spacing: .1em; color: var(--muted); margin: 0 0 10px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--line); font-weight: 700;
+}
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 12px; color: var(--muted); }
+.field .ctl { position: relative; display: flex; align-items: center; }
+.field input[type="number"], .field select {
+  width: 100%; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface-2); font-variant-numeric: tabular-nums;
+}
+.field input[type="number"] { padding-right: 42px; text-align: right; }
+.field .unit { position: absolute; right: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.field .hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.checks { display: grid; gap: 8px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; cursor: pointer; }
+.check input { margin-top: 3px; accent-color: var(--accent); }
+.check small { display: block; color: var(--muted); font-size: 11px; }
+.notice { font-size: 12px; padding: 8px 10px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
+.rates { font-size: 12px; color: var(--muted); }
+.rates summary { cursor: pointer; }
+.rates table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.rates td { padding: 2px 0; border-bottom: 1px dotted var(--line); }
+.rates td:last-child { text-align: right; }
+
+/* Results */
+.results { display: grid; gap: 20px; min-width: 0; }
+.summary {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px; display: grid; gap: 20px; box-shadow: var(--shadow);
+}
+.headline { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; }
+.multiple .label { font-size: 12px; color: var(--muted); letter-spacing: .05em; }
+.multiple .value { font-family: var(--f-display); font-size: 56px; line-height: 1; letter-spacing: -.01em; }
+.multiple .value small { font-size: 22px; margin-left: 4px; }
+.status {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px; margin-top: 10px;
+}
+.status.ok { background: var(--good-bg); color: var(--good); }
+.status.ng { background: var(--warn-bg); color: var(--warn); }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; flex: 1 1 460px; max-width: 640px; }
+.kpi { padding: 2px 14px; border-left: 1px solid var(--line); display: grid; gap: 2px; align-content: start; }
+.kpi .k { font-size: 11px; color: var(--muted); }
+.kpi .v { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kpi .s { font-size: 11px; color: var(--muted); }
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
+  .kpi:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .multiple .value { font-size: 44px; }
+}
+
+/* Bars */
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 10px; align-items: center; }
+.bar-row .name { font-size: 12px; color: var(--muted); text-align: right; }
+.track { position: relative; height: 26px; }
+.fill { position: absolute; inset: 0 auto 0 0; display: flex; border-radius: 3px; overflow: hidden; transition: width .35s ease; }
+.fill.cost { background: var(--c-cost); }
+.seg { height: 100%; transition: width .35s ease; }
+.seg + .seg { box-shadow: inset 1px 0 0 var(--surface); }
+.bar-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; white-space: nowrap; padding-left: 8px; font-variant-numeric: tabular-nums; transition: left .35s ease; }
+.target {
+  position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--ink);
+  opacity: .55; transition: left .35s ease; pointer-events: none;
+}
+.target-label { position: absolute; top: -20px; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; transition: left .35s ease; }
+.bars-area { position: relative; padding-top: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); padding-left: 126px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+@media (max-width: 640px) { .bar-row { grid-template-columns: minmax(0, 1fr); gap: 4px; } .bar-row .name { text-align: left; } .legend { padding-left: 0; } }
+
+/* Categories */
+.cat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.cat-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px;
+  padding: 14px 18px; border-bottom: 1px solid var(--line); border-top: 4px solid var(--cat-color);
+}
+.cat-head h3 { margin: 0; font-size: 16px; display: flex; align-items: baseline; gap: 10px; }
+.cat-head h3 small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.cat-total { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--cat-color); }
+
+.item {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px;
+  padding: 12px 18px; border-bottom: 1px solid var(--line); align-items: start;
+}
+.item:last-child { border-bottom: 0; }
+.item.off .item-main, .item.off .item-amt { opacity: .45; }
+.item input.toggle { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--cat-color); cursor: pointer; }
+.item-name { font-weight: 700; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.item-name label { cursor: pointer; }
+.chip { font-size: 11px; font-weight: 400; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.warn { border-color: transparent; background: var(--warn-bg); color: var(--warn); }
+.chip.annual { border-color: var(--cat-color); color: var(--cat-color); }
+.item-basis { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.item-note { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.item-amt { font-size: 16px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.item-amt small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
+.item details { grid-column: 2 / -1; }
+.item summary { font-size: 12px; color: var(--accent); cursor: pointer; width: max-content; }
+.params { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 8px; padding: 12px; background: var(--surface-2); border-radius: 8px; }
+.params .field input[type="number"], .params .field select { background: var(--surface); }
+
+.foot { font-size: 12px; color: var(--muted); line-height: 1.7; max-width: 72ch; }
+.foot h4 { font-size: 12px; margin: 0 0 4px; color: var(--ink); }
+.foot ul { margin: 0; padding-left: 1.2em; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 6px; font-size: 13px;
+}
+.copybox { width: 100%; height: 220px; margin-top: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+@media (prefers-reduced-motion: reduce) { .fill, .seg, .bar-val, .target, .target-label { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">商談用 見積もりツール</div>
+      <h1>賃上げ原資シミュレーター</h1>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-reset" type="button">初期値に戻す</button>
+      <button class="btn primary" id="btn-copy" type="button">提案サマリーをコピー</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel" aria-label="入力">
+      <section>
+        <h2>企業情報</h2>
+        <div class="fields">
+          <div class="field full">
+            <label for="b-industry">業種</label>
+            <select id="b-industry"></select>
+          </div>
+          <div class="field">
+            <label for="b-year">年度</label>
+            <select id="b-year">
+              <option value="2025">2025年度（R7）</option>
+              <option value="2026">2026年度（R8）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="b-emp">従業員数</label>
+            <div class="ctl"><input type="number" id="b-emp" min="1" step="1" inputmode="numeric"><span class="unit">人</span></div>
+          </div>
+          <div class="field">
+            <label for="b-fixed">うち有期・パート</label>
+            <div class="ctl"><input type="number" id="b-fixed" min="0" step="1" inputmode="numeric"><span class="unit">人</span></div>
+          </div>
+          <div class="field">
+            <label for="b-salary">平均年収（1人）</label>
+            <div class="ctl"><input type="number" id="b-salary" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
+          </div>
+          <div class="field">
+            <label for="b-minwage">事業場内最低賃金</label>
+            <div class="ctl"><input type="number" id="b-minwage" min="0" step="1" inputmode="numeric"><span class="unit">円/時</span></div>
+          </div>
+          <div class="field">
+            <label for="b-region">地域別最低賃金</label>
+            <div class="ctl"><input type="number" id="b-region" min="0" step="1" inputmode="numeric"><span class="unit">円/時</span></div>
+          </div>
+          <div class="field full">
+            <label for="b-corptax">年間の法人税額（目安）</label>
+            <div class="ctl"><input type="number" id="b-corptax" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
+            <div class="hint">賃上げ促進税制の控除上限（法人税額の20%）に使います。赤字の場合は0。</div>
+          </div>
+        </div>
+        <div id="sme-notice" class="notice" hidden></div>
+      </section>
+
+      <section>
+        <h2>賃上げ計画</h2>
+        <div class="fields">
+          <div class="field full">
+            <label for="b-raise">賃上げによる年間固定費アップ</label>
+            <div class="ctl"><input type="number" id="b-raise" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
+            <div class="hint" id="raise-hint"></div>
+          </div>
+          <div class="field">
+            <label for="b-target">目標倍率</label>
+            <div class="ctl"><input type="number" id="b-target" min="0.5" step="0.5" inputmode="decimal"><span class="unit">倍</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>表示オプション</h2>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="o-withsi">
+            <span>会社負担の社会保険料を含めて比較<small>固定費アップを「賃上げ額＋会社負担の社保」で計算します</small></span></label>
+          <label class="check"><input type="checkbox" id="o-expected">
+            <span>採択見込みを反映した期待値で表示<small>補助金・助成金を「金額×採択見込み」で計上します</small></span></label>
+        </div>
+        <details class="rates" style="margin-top:12px">
+          <summary>社会保険料率の前提（会社負担）</summary>
+          <table id="rate-table"></table>
+        </details>
+      </section>
+    </aside>
+
+    <main class="results">
+      <section class="summary" aria-label="試算結果">
+        <div class="headline">
+          <div class="multiple">
+            <div class="label">初年度インパクト ÷ 年間固定費アップ</div>
+            <div class="value num"><span id="r-mult">0.0</span><small>倍</small></div>
+            <div id="r-status" class="status ok"></div>
+          </div>
+          <div class="kpis">
+            <div class="kpi"><span class="k">年間固定費アップ</span><span class="v" id="r-cost"></span><span class="s" id="r-cost-s"></span></div>
+            <div class="kpi"><span class="k">初年度インパクト</span><span class="v" id="r-year1"></span><span class="s" id="r-year1-s"></span></div>
+            <div class="kpi"><span class="k">継続効果（毎年）</span><span class="v" id="r-annual"></span><span class="s">社保適正化・AI</span></div>
+            <div class="kpi"><span class="k">3年累計の倍率</span><span class="v" id="r-mult3"></span><span class="s" id="r-mult3-s"></span></div>
+          </div>
+        </div>
+        <div class="bars-area" id="bars-area">
+          <div class="bars">
+            <div class="bar-row"><span class="name">年間固定費アップ</span><div class="track"><div class="fill cost" id="bar-cost"></div><span class="bar-val" id="bar-cost-v"></span></div></div>
+            <div class="bar-row"><span class="name">初年度インパクト</span><div class="track" id="impact-track"><div class="fill" id="bar-impact"></div><span class="bar-val" id="bar-impact-v"></span></div></div>
+          </div>
+          <div class="target" id="target-line"></div>
+          <div class="target-label" id="target-label"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <div id="cats" class="results"></div>
+
+      <section class="foot">
+        <h4>ご利用上の注意</h4>
+        <ul>
+          <li>金額は公募要領・支給要領（2025年度時点の公表内容）をもとにした概算です。2026年度は制度改正・名称変更・統合の可能性があるため、申請前に必ず最新の要領で確認してください。</li>
+          <li>補助金は審査による採択制で、交付決定前の発注・契約は対象外です。助成金は要件を満たせば原則支給されますが、就業規則・賃金台帳などの整備が必要です。</li>
+          <li>社会保険料率は協会けんぽ全国平均・一般の事業などの目安です。介護保険料（40〜64歳）は含みません。</li>
+          <li>選択制確定拠出年金は、従業員の将来の年金額・傷病手当金などに影響するため、制度説明と本人の選択が前提です。</li>
+          <li>AIワークフローの効果は削減時間を人件費に換算した値です。残業削減や採用抑制で実現したときに現金効果になります。</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- マスタ ---------- */
+  // sme: 中小企業の従業員数基準 / small: 小規模事業者の基準 / emp: 雇用保険の事業区分 / rousai: 労災保険率(%)の目安
+  var INDUSTRIES = {
+    manufacturing: { label: "製造業", sme: 300, small: 20, emp: "general", rousai: 0.45, aiHours: 8, aiHint: "受発注入力・生産日報・見積作成" },
+    construction:  { label: "建設業", sme: 300, small: 20, emp: "construction", rousai: 0.95, aiHours: 10, aiHint: "見積・施工写真整理・安全書類" },
+    transport:     { label: "運輸業", sme: 300, small: 20, emp: "general", rousai: 0.85, aiHours: 8, aiHint: "配車計画・運行日報・請求処理" },
+    wholesale:     { label: "卸売業", sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 10, aiHint: "受注入力・在庫照会・請求書処理" },
+    retail:        { label: "小売業", sme: 50, small: 5, emp: "general", rousai: 0.3, aiHours: 6, aiHint: "発注予測・シフト作成・EC商品登録" },
+    restaurant:    { label: "飲食業", sme: 50, small: 5, emp: "general", rousai: 0.3, aiHours: 6, aiHint: "シフト作成・発注・予約対応" },
+    hotel:         { label: "宿泊業", sme: 100, small: 20, emp: "general", rousai: 0.3, aiHours: 8, aiHint: "予約管理・問合せ対応・多言語案内" },
+    care:          { label: "医療・介護・福祉", sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 10, aiHint: "介護記録・請求業務・シフト作成" },
+    it:            { label: "情報通信業", sme: 300, small: 20, emp: "general", rousai: 0.25, aiHours: 12, aiHint: "議事録・資料作成・コードレビュー" },
+    service:       { label: "サービス業（その他）", sme: 100, small: 5, emp: "general", rousai: 0.3, aiHours: 8, aiHint: "問合せ対応・書類作成・経理処理" },
+    agri:          { label: "農林水産業", sme: 300, small: 20, emp: "agri", rousai: 1.3, aiHours: 6, aiHint: "生産記録・出荷管理・書類作成" }
+  };
+
+  // 会社負担分の料率(%)
+  var RATES = {
+    2025: { kenpo: 5.0, kousei: 9.15, kyoshutsu: 0.36, shienkin: 0, koyou: { general: 0.9, agri: 1.0, construction: 1.1 } },
+    2026: { kenpo: 4.95, kousei: 9.15, kyoshutsu: 0.36, shienkin: 0.115, koyou: { general: 0.85, agri: 0.95, construction: 1.05 } }
+  };
+
+  var CATS = [
+    { id: "josei", name: "助成金", sub: "厚生労働省・要件を満たせば支給", color: "var(--c-josei)" },
+    { id: "subsidy", name: "補助金", sub: "経済産業省系・審査による採択", color: "var(--c-subsidy)" },
+    { id: "tax", name: "税制優遇", sub: "法人税の税額控除", color: "var(--c-tax)" },
+    { id: "social", name: "社会保険料の適正化", sub: "会社負担の削減・毎年", color: "var(--c-social)" },
+    { id: "ai", name: "AIワークフロー", sub: "業務時間の削減・毎年", color: "var(--c-ai)" }
+  ];
+
+  var MAN = 10000;
+  function yesNo(def) { return { type: "sel", options: [["yes", "あり"], ["no", "なし"]], def: function () { return def; } }; }
+  function adopt(def) { return { id: "adopt", label: "採択見込み", unit: "%", step: 5, def: function () { return def; } }; }
+  function byEmp(emp, table) { for (var i = 0; i < table.length; i++) { if (emp <= table[i][0]) return table[i]; } return table[table.length - 1]; }
+
+  /* ---------- 施策 ---------- */
+  var ITEMS = [
+    /* 助成金 */
+    {
+      id: "gyomu", cat: "josei", once: true, on: function (c) { return c.nearMin; },
+      name: "業務改善助成金",
+      params: [
+        { id: "course", label: "事業場内最低賃金の引上げ", type: "sel", options: [["30", "30円コース"], ["45", "45円コース"], ["60", "60円コース"], ["90", "90円コース"]], def: function () { return "45"; } },
+        { id: "n", label: "引上げ対象人数", unit: "人", step: 1, def: function (c) { return Math.max(1, Math.min(c.emp, 4)); } },
+        { id: "invest", label: "設備投資額", unit: "万円", step: 10, def: function () { return 150; } },
+        adopt(90)
+      ],
+      calc: function (c, p) {
+        var caps = { "30": [30, 50, 70, 120], "45": [45, 70, 100, 180], "60": [60, 90, 150, 300], "90": [90, 150, 270, 450] };
+        var n = p.n, idx = n <= 1 ? 0 : n <= 3 ? 1 : n <= 6 ? 2 : 3;
+        var cap = caps[p.course][idx] * MAN;
+        var rate = c.minWage < 1000 ? 4 / 5 : 3 / 4;
+        var amt = Math.min(p.invest * MAN * rate, cap);
+        var r = { amount: amt, basis: "設備投資" + fmtN(p.invest) + "万円×" + (rate === 0.8 ? "4/5" : "3/4") + "（" + p.course + "円・" + n + "人の上限" + fmtN(cap / MAN) + "万円）" };
+        if (!c.nearMin) { r.amount = 0; r.warn = "事業場内最低賃金と地域別最低賃金の差が50円超"; }
+        if (!c.sme) { r.amount = 0; r.warn = "中小企業の規模を超えています"; }
+        r.note = "事業場内最低賃金の引上げ＋生産性向上の設備投資がセット。10人以上の区分は特例事業者のみ。";
+        return r;
+      }
+    },
+    {
+      id: "cu_seishain", cat: "josei", once: true, on: function (c) { return c.fixed > 0; },
+      name: "キャリアアップ助成金（正社員化コース）",
+      params: [
+        { id: "n", label: "正社員化する人数", unit: "人", step: 1, def: function (c) { return Math.min(c.fixed, 1); } },
+        { id: "kind", label: "対象者区分", type: "sel", options: [["80", "重点支援対象者（80万円）"], ["40", "それ以外（40万円）"]], def: function () { return "80"; } },
+        { id: "rule", label: "正社員転換制度の新設加算", type: "sel", options: [["yes", "あり（+20万円）"], ["no", "なし"]], def: function () { return "yes"; } },
+        adopt(95)
+      ],
+      calc: function (c, p) {
+        var n = Math.min(p.n, 20);
+        var amt = n * Number(p.kind) * MAN + (n > 0 && p.rule === "yes" ? 20 * MAN : 0);
+        var r = { amount: amt, basis: n + "人×" + p.kind + "万円" + (n > 0 && p.rule === "yes" ? "＋制度新設加算20万円" : ""), note: "有期→正社員へ転換し、転換後6か月ごとに2期に分けて支給。賃金3%以上増額が要件。" };
+        if (c.fixed <= 0) r.warn = "有期・パートの従業員が0人";
+        return r;
+      }
+    },
+    {
+      id: "cu_chingin", cat: "josei", once: true, on: function (c) { return c.fixed > 0; },
+      name: "キャリアアップ助成金（賃金規定等改定コース）",
+      params: [
+        { id: "n", label: "対象の有期・パート人数", unit: "人", step: 1, def: function (c) { return c.fixed; } },
+        { id: "pct", label: "基本給の引上げ率", unit: "%", step: 0.5, def: function () { return 3; } },
+        adopt(95)
+      ],
+      calc: function (c, p) {
+        var per = p.pct >= 6 ? 7 : p.pct >= 5 ? 6.5 : p.pct >= 4 ? 5 : p.pct >= 3 ? 4 : 0;
+        var n = Math.min(p.n, 100);
+        var r = { amount: n * per * MAN, basis: n + "人×" + fmtN(per) + "万円（引上げ率" + fmtN(p.pct) + "%）", note: "有期雇用労働者の賃金規定を3%以上増額改定。正社員の賃上げと同時に実施しやすい。" };
+        if (per === 0) r.warn = "引上げ率3%以上が必要";
+        return r;
+      }
+    },
+    {
+      id: "jinzai", cat: "josei", once: true, on: function () { return true; },
+      name: "人材開発支援助成金（事業展開等リスキリング支援コース）",
+      params: [
+        { id: "n", label: "研修対象人数", unit: "人", step: 1, def: function (c) { return Math.min(c.emp, 5); } },
+        { id: "cost", label: "1人あたり研修費", unit: "万円", step: 1, def: function () { return 10; } },
+        { id: "hours", label: "1人あたり研修時間", unit: "時間", step: 1, def: function () { return 10; } },
+        adopt(90)
+      ],
+      calc: function (c, p) {
+        var capPer = p.hours >= 200 ? 50 : p.hours >= 100 ? 40 : 30;
+        var expense = Math.min(p.cost * 0.75, capPer) * MAN;
+        var wage = p.hours * 1000;
+        var amt = p.n * (expense + wage);
+        var r = { amount: amt, basis: p.n + "人×（研修費" + fmtN(p.cost) + "万円×75%＋" + fmtN(p.hours) + "時間×1,000円）", note: "AI活用研修などを想定。10時間以上のOFF-JTが対象。令和8年度までの時限コース。" };
+        if (p.hours < 10) { r.amount = 0; r.warn = "研修時間10時間以上が必要"; }
+        return r;
+      }
+    },
+
+    /* 補助金 */
+    {
+      id: "it_ai", cat: "subsidy", once: true, on: function () { return true; },
+      name: "デジタル化・AI導入補助金（旧IT導入補助金）",
+      params: [
+        { id: "invest", label: "ITツール・AI導入費", unit: "万円", step: 10, def: function () { return 100; } },
+        adopt(70)
+      ],
+      calc: function (c, p) {
+        var rate = c.nearMin ? 2 / 3 : 1 / 2;
+        var amt = Math.min(p.invest * MAN * rate, 450 * MAN);
+        var r = { amount: amt, basis: fmtN(p.invest) + "万円×" + (c.nearMin ? "2/3" : "1/2") + "（上限450万円）", note: c.nearMin ? "最低賃金近傍の従業員が多い事業者は補助率2/3。AIワークフローの導入費に充当。" : "AIワークフローの導入費（ソフト・クラウド最大2年分）に充当。" };
+        if (amt < 5 * MAN) { r.amount = 0; r.warn = "補助額5万円未満は対象外"; }
+        if (!c.sme) { r.amount = 0; r.warn = "中小企業の規模を超えています"; }
+        return r;
+      }
+    },
+    {
+      id: "jizokuka", cat: "subsidy", once: true, on: function (c) { return c.small; },
+      name: "小規模事業者持続化補助金",
+      params: [
+        { id: "invest", label: "販路開拓などの経費", unit: "万円", step: 10, def: function () { return 150; } },
+        { id: "special", label: "賃金引上げ特例", type: "sel", options: [["yes", "あり（上限+150万円）"], ["no", "なし"]], def: function () { return "yes"; } },
+        adopt(45)
+      ],
+      calc: function (c, p) {
+        var cap = (50 + (p.special === "yes" ? 150 : 0)) * MAN;
+        var r = { amount: Math.min(p.invest * MAN * 2 / 3, cap), basis: fmtN(p.invest) + "万円×2/3（上限" + fmtN(cap / MAN) + "万円）", note: "賃金引上げ特例は事業場内最低賃金を地域別最低賃金+50円以上にすることが要件。" };
+        if (!c.small) { r.amount = 0; r.warn = "小規模事業者（" + c.ind.small + "人以下）が対象"; }
+        return r;
+      }
+    },
+    {
+      id: "shoryoku_cat", cat: "subsidy", once: true, on: function () { return false; },
+      name: "省力化投資補助金（カタログ注文型）",
+      params: [
+        { id: "invest", label: "省力化製品の購入額", unit: "万円", step: 10, def: function () { return 300; } },
+        { id: "special", label: "大幅な賃上げ", type: "sel", options: [["yes", "あり（上限引上げ）"], ["no", "なし"]], def: function () { return "yes"; } },
+        adopt(90)
+      ],
+      calc: function (c, p) {
+        var t = byEmp(c.emp, [[5, 200, 300], [20, 500, 750], [Infinity, 1000, 1500]]);
+        var cap = (p.special === "yes" ? t[2] : t[1]) * MAN;
+        var r = { amount: Math.min(p.invest * MAN / 2, cap), basis: fmtN(p.invest) + "万円×1/2（上限" + fmtN(cap / MAN) + "万円）", note: "カタログ掲載の清掃ロボ・券売機・自動倉庫などを導入。採択率が高く短期で使いやすい。" };
+        if (!c.sme) { r.amount = 0; r.warn = "中小企業の規模を超えています"; }
+        return r;
+      }
+    },
+    {
+      id: "shoryoku_gen", cat: "subsidy", once: true, on: function () { return false; },
+      name: "省力化投資補助金（一般型）",
+      params: [
+        { id: "invest", label: "オーダーメイド設備投資額", unit: "万円", step: 50, def: function () { return 1000; } },
+        { id: "special", label: "大幅賃上げ特例", type: "sel", options: [["yes", "あり（上限引上げ）"], ["no", "なし"]], def: function () { return "no"; } },
+        adopt(60)
+      ],
+      calc: function (c, p) {
+        var t = byEmp(c.emp, [[5, 750, 1000], [20, 1500, 2000], [50, 3000, 4000], [100, 5000, 6500], [Infinity, 8000, 10000]]);
+        var cap = (p.special === "yes" ? t[2] : t[1]) * MAN;
+        var rate = c.small ? 2 / 3 : 1 / 2;
+        var inv = p.invest * MAN, base = 1500 * MAN, s;
+        if (inv * rate <= base) s = inv * rate; else s = base + (inv - base / rate) / 3;
+        var r = { amount: Math.min(s, cap), basis: fmtN(p.invest) + "万円×" + (c.small ? "2/3" : "1/2") + "（1,500万円超の部分は1/3、上限" + fmtN(cap / MAN) + "万円）", note: "個別の生産ライン自動化・ロボット導入など。労働生産性の年平均4%向上が要件。" };
+        if (!c.sme) { r.amount = 0; r.warn = "中小企業の規模を超えています"; }
+        return r;
+      }
+    },
+    {
+      id: "monodukuri", cat: "subsidy", once: true, on: function () { return false; },
+      name: "ものづくり補助金（製品・サービス高付加価値化枠）",
+      params: [
+        { id: "invest", label: "設備投資額", unit: "万円", step: 50, def: function () { return 1000; } },
+        { id: "special", label: "大幅賃上げ特例", type: "sel", options: [["yes", "あり（上限引上げ）"], ["no", "なし"]], def: function () { return "no"; } },
+        adopt(35)
+      ],
+      calc: function (c, p) {
+        var t = byEmp(c.emp, [[5, 750, 100], [20, 1000, 250], [50, 1500, 1000], [Infinity, 2500, 1000]]);
+        var cap = (t[1] + (p.special === "yes" ? t[2] : 0)) * MAN;
+        var rate = c.small ? 2 / 3 : 1 / 2;
+        var r = { amount: Math.min(p.invest * MAN * rate, cap), basis: fmtN(p.invest) + "万円×" + (c.small ? "2/3" : "1/2") + "（上限" + fmtN(cap / MAN) + "万円）", note: "給与支給総額の年平均成長率などの賃上げ要件あり。2026年度は新事業進出補助金との統合に注意。" };
+        if (!c.sme) { r.amount = 0; r.warn = "中小企業の規模を超えています"; }
+        return r;
+      }
+    },
+    {
+      id: "shinjigyo", cat: "subsidy", once: true, on: function () { return false; },
+      name: "中小企業新事業進出補助金",
+      params: [
+        { id: "invest", label: "新事業の投資額", unit: "万円", step: 100, def: function () { return 2000; } },
+        { id: "special", label: "大幅賃上げ特例", type: "sel", options: [["yes", "あり（上限引上げ）"], ["no", "なし"]], def: function () { return "no"; } },
+        adopt(40)
+      ],
+      calc: function (c, p) {
+        var t = byEmp(c.emp, [[20, 2500, 3000], [50, 4000, 5000], [100, 5500, 7000], [Infinity, 7000, 9000]]);
+        var cap = (p.special === "yes" ? t[2] : t[1]) * MAN;
+        var amt = Math.min(p.invest * MAN / 2, cap);
+        var r = { amount: amt, basis: fmtN(p.invest) + "万円×1/2（上限" + fmtN(cap / MAN) + "万円）", note: "既存事業と異なる新市場への進出が対象。補助額の下限は750万円。" };
+        if (amt < 750 * MAN) { r.amount = 0; r.warn = "補助額の下限750万円に届きません"; }
+        if (!c.sme) { r.amount = 0; r.warn = "中小企業の規模を超えています"; }
+        return r;
+      }
+    },
+
+    /* 税制 */
+    {
+      id: "tax", cat: "tax", once: true, on: function () { return true; },
+      name: "賃上げ促進税制（中小企業向け）",
+      params: [
+        { id: "edu", label: "教育訓練費を前年比5%以上増", type: "sel", options: [["yes", "あり（+10%）"], ["no", "なし"]], def: function () { return "yes"; } },
+        { id: "kurumin", label: "くるみん・えるぼし認定", type: "sel", options: [["yes", "あり（+5%）"], ["no", "なし"]], def: function () { return "no"; } }
+      ],
+      calc: function (c, p) {
+        var inc = c.payroll > 0 ? c.raise / c.payroll : 0;
+        var base = inc >= 0.025 ? 30 : inc >= 0.015 ? 15 : 0;
+        var rate = base === 0 ? 0 : base + (p.edu === "yes" ? 10 : 0) + (p.kurumin === "yes" ? 5 : 0);
+        var raw = c.raise * rate / 100, cap = c.corpTax * 0.2;
+        var r = { amount: Math.min(raw, cap), basis: "賃上げ額" + fmtMan(c.raise) + "×" + rate + "%（給与総額の増加率" + fmtPct(inc) + "、上限は法人税額の20%）", note: "赤字の年は控除額を5年間繰り越し可能。" };
+        if (base === 0) r.warn = "給与総額の増加率1.5%以上が必要";
+        else if (raw > cap) r.warn = "法人税額20%の上限で頭打ち";
+        return r;
+      }
+    },
+
+    /* 社会保険料 */
+    {
+      id: "dc", cat: "social", once: false, on: function () { return true; },
+      name: "選択制確定拠出年金（企業型DC）",
+      params: [
+        { id: "join", label: "加入率", unit: "%", step: 5, def: function () { return 50; } },
+        { id: "monthly", label: "1人あたり月額拠出", unit: "円", step: 1000, def: function () { return 20000; } },
+        { id: "fee", label: "運営費（会社全体・月額）", unit: "円", step: 1000, def: function () { return 5000; } }
+      ],
+      calc: function (c, p) {
+        var n = Math.round(c.emp * p.join / 100);
+        var save = n * p.monthly * 12 * c.siRate;
+        var amt = Math.max(0, save - p.fee * 12);
+        return { amount: amt, basis: n + "人×月" + fmtN(p.monthly) + "円×12か月×会社負担率" + fmtPct(c.siRate) + "−運営費", note: "給与の一部を掛金に振り替え、社会保険料の算定対象から外す。従業員側も社保・税が軽減。" };
+      }
+    },
+
+    /* AI */
+    {
+      id: "ai", cat: "ai", once: false, on: function () { return true; },
+      name: "AIワークフロー導入",
+      params: [
+        { id: "n", label: "対象人数", unit: "人", step: 1, def: function (c) { return Math.max(1, Math.round(c.emp * 0.5)); } },
+        { id: "hours", label: "1人あたり月の削減時間", unit: "時間", step: 1, def: function (c) { return c.ind.aiHours; } },
+        { id: "tool", label: "ツール利用料（月額）", unit: "円", step: 5000, def: function () { return 30000; } }
+      ],
+      calc: function (c, p) {
+        var hourly = c.salary * (1 + c.siRate) / 1920;
+        var gross = p.n * p.hours * 12 * hourly;
+        return { amount: Math.max(0, gross - p.tool * 12), basis: p.n + "人×月" + fmtN(p.hours) + "時間×12か月×時間単価" + fmtN(Math.round(hourly)) + "円−ツール費", note: c.ind.label + "の例：" + c.ind.aiHint + "の自動化。" };
+      }
+    }
+  ];
+
+  /* ---------- 状態 ---------- */
+  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, minwage: 1150, region: 1121, corptax: 300, raise: 100, target: 3 };
+  var KEY = "chinage-sim-v1";
+  var state = load();
+
+  function fresh() { return { base: Object.assign({}, DEFAULT_BASE), en: {}, p: {}, opts: { withsi: false, expected: false } }; }
+  function load() {
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY));
+      if (s && s.base) { var f = fresh(); f.base = Object.assign(f.base, s.base); f.en = s.en || {}; f.p = s.p || {}; f.opts = Object.assign(f.opts, s.opts || {}); return f; }
+    } catch (e) {}
+    return fresh();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  /* ---------- 書式 ---------- */
+  function fmtN(n) { return Number(n).toLocaleString("ja-JP", { maximumFractionDigits: 1 }); }
+  function fmtMan(yen) { return (yen / MAN).toLocaleString("ja-JP", { maximumFractionDigits: 1, minimumFractionDigits: 0 }) + "万円"; }
+  function fmtPct(r) { return (r * 100).toLocaleString("ja-JP", { maximumFractionDigits: 2 }) + "%"; }
+  function num(v, d) { var n = parseFloat(v); return isFinite(n) ? n : d; }
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  /* ---------- 計算 ---------- */
+  function buildCtx() {
+    var b = state.base;
+    var ind = INDUSTRIES[b.industry] || INDUSTRIES.manufacturing;
+    var rt = RATES[b.year] || RATES[2026];
+    var emp = Math.max(1, Math.round(num(b.emp, 1)));
+    var fixed = Math.max(0, Math.min(emp, Math.round(num(b.fixed, 0))));
+    var siParts = [
+      ["健康保険（協会けんぽ平均）", rt.kenpo],
+      ["厚生年金保険", rt.kousei],
+      ["子ども・子育て拠出金", rt.kyoshutsu],
+      ["子ども・子育て支援金", rt.shienkin],
+      ["雇用保険（" + ({ general: "一般", agri: "農林水産", construction: "建設" })[ind.emp] + "）", rt.koyou[ind.emp]],
+      ["労災保険（" + ind.label + "の目安）", ind.rousai]
+    ];
+    var siRate = siParts.reduce(function (s, x) { return s + x[1]; }, 0) / 100;
+    var minWage = num(b.minwage, 0), region = num(b.region, 0);
+    var salary = num(b.salary, 0) * MAN;
+    return {
+      ind: ind, year: b.year, emp: emp, fixed: fixed, salary: salary,
+      payroll: emp * salary, raise: num(b.raise, 0) * MAN, corpTax: num(b.corptax, 0) * MAN,
+      minWage: minWage, region: region, nearMin: minWage > 0 && minWage - region <= 50,
+      sme: emp <= ind.sme, small: emp <= ind.small, siRate: siRate, siParts: siParts,
+      target: Math.max(0.1, num(b.target, 3))
+    };
+  }
+
+  function paramValue(item, prm, c) {
+    var o = state.p[item.id] && state.p[item.id][prm.id];
+    if (o !== undefined && o !== "") return prm.type === "sel" ? o : num(o, 0);
+    return prm.def(c);
+  }
+  function isOn(item, c) { return state.en[item.id] !== undefined ? state.en[item.id] : item.on(c); }
+
+  function compute() {
+    var c = buildCtx();
+    var rows = ITEMS.map(function (item) {
+      var p = {};
+      item.params.forEach(function (prm) { p[prm.id] = paramValue(item, prm, c); });
+      var r = item.calc(c, p);
+      var full = Math.max(0, r.amount || 0);
+      var amount = full;
+      if (state.opts.expected && p.adopt !== undefined) amount = full * Math.max(0, Math.min(100, p.adopt)) / 100;
+      return { item: item, on: isOn(item, c), full: full, amount: amount, r: r, p: p };
+    });
+    var cost = c.raise * (state.opts.withsi ? 1 + c.siRate : 1);
+    var byCat = {}; CATS.forEach(function (k) { byCat[k.id] = 0; });
+    var once = 0, annual = 0;
+    rows.forEach(function (row) {
+      if (!row.on) return;
+      byCat[row.item.cat] += row.amount;
+      if (row.item.once) once += row.amount; else annual += row.amount;
+    });
+    var year1 = once + annual;
+    return {
+      c: c, rows: rows, cost: cost, byCat: byCat, once: once, annual: annual, year1: year1,
+      mult: cost > 0 ? year1 / cost : 0,
+      mult3: cost > 0 ? (once + annual * 3) / (cost * 3) : 0
+    };
+  }
+
+  /* ---------- 描画（初回） ---------- */
+  function buildForm() {
+    var sel = $("b-industry");
+    Object.keys(INDUSTRIES).forEach(function (k) { var o = el("option", null, INDUSTRIES[k].label); o.value = k; sel.appendChild(o); });
+    var map = { industry: "b-industry", year: "b-year", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
+    Object.keys(map).forEach(function (k) {
+      var input = $(map[k]);
+      input.value = state.base[k];
+      input.addEventListener("input", function () { state.base[k] = input.value; update(); });
+    });
+    ["withsi", "expected"].forEach(function (k) {
+      var cb = $("o-" + k); cb.checked = !!state.opts[k];
+      cb.addEventListener("change", function () { state.opts[k] = cb.checked; update(); });
+    });
+  }
+
+  var itemEls = {};
+  function buildCats() {
+    var root = $("cats");
+    var legend = $("legend");
+    CATS.forEach(function (cat) {
+      var sec = el("section", "cat"); sec.style.setProperty("--cat-color", cat.color);
+      var head = el("div", "cat-head");
+      var h = el("h3", null, cat.name); h.appendChild(el("small", null, cat.sub));
+      var total = el("span", "cat-total num"); total.id = "cat-total-" + cat.id;
+      head.appendChild(h); head.appendChild(total); sec.appendChild(head);
+
+      ITEMS.filter(function (i) { return i.cat === cat.id; }).forEach(function (item) {
+        var row = el("div", "item");
+        var cb = el("input", "toggle"); cb.type = "checkbox"; cb.id = "en-" + item.id;
+        cb.addEventListener("change", function () { state.en[item.id] = cb.checked; update(); });
+        var main = el("div", "item-main");
+        var name = el("div", "item-name");
+        var lab = el("label", null, item.name); lab.htmlFor = cb.id; name.appendChild(lab);
+        name.appendChild(el("span", "chip" + (item.once ? "" : " annual"), item.once ? "初年度のみ" : "毎年"));
+        var warn = el("span", "chip warn"); warn.hidden = true; name.appendChild(warn);
+        var basis = el("div", "item-basis");
+        var note = el("div", "item-note");
+        main.appendChild(name); main.appendChild(basis); main.appendChild(note);
+        var amt = el("div", "item-amt num");
+
+        var det = el("details"); det.appendChild(el("summary", null, "条件を調整"));
+        var grid = el("div", "params");
+        var inputs = {};
+        item.params.forEach(function (prm) {
+          var f = el("div", "field");
+          var id = "p-" + item.id + "-" + prm.id;
+          var l = el("label", null, prm.label); l.htmlFor = id; f.appendChild(l);
+          var ctl, input;
+          if (prm.type === "sel") {
+            input = el("select"); input.id = id;
+            prm.options.forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; input.appendChild(op); });
+            ctl = input;
+          } else {
+            ctl = el("div", "ctl");
+            input = el("input"); input.type = "number"; input.id = id; input.min = "0"; input.step = String(prm.step || 1); input.inputMode = "decimal";
+            ctl.appendChild(input); ctl.appendChild(el("span", "unit", prm.unit));
+          }
+          input.addEventListener(prm.type === "sel" ? "change" : "input", function () {
+            state.p[item.id] = state.p[item.id] || {};
+            if (input.value === "") delete state.p[item.id][prm.id]; else state.p[item.id][prm.id] = input.value;
+            update();
+          });
+          f.appendChild(ctl); grid.appendChild(f);
+          inputs[prm.id] = input;
+        });
+        det.appendChild(grid);
+
+        row.appendChild(cb); row.appendChild(main); row.appendChild(amt); row.appendChild(det);
+        sec.appendChild(row);
+        itemEls[item.id] = { row: row, cb: cb, warn: warn, basis: basis, note: note, amt: amt, inputs: inputs };
+      });
+      root.appendChild(sec);
+
+      var lg = el("span"); var sw = el("i"); sw.style.background = cat.color; lg.appendChild(sw); lg.appendChild(document.createTextNode(cat.name)); legend.appendChild(lg);
+    });
+  }
+
+  /* ---------- 描画（更新） ---------- */
+  var last;
+  function update() {
+    var R = compute(); last = R; var c = R.c;
+    save();
+
+    // 企業情報の注意
+    var notices = [];
+    if (!c.sme) notices.push(c.ind.label + "の中小企業基準（" + c.ind.sme + "人以下）を超えています。多くの補助金・助成金が対象外または別枠です。");
+    if (num(state.base.fixed, 0) > c.emp) notices.push("有期・パートの人数が従業員数を超えています。");
+    $("sme-notice").hidden = notices.length === 0; $("sme-notice").textContent = notices.join(" ");
+
+    $("raise-hint").textContent = "1人あたり年" + fmtMan(c.raise / c.emp) + "・給与総額の" + fmtPct(c.payroll ? c.raise / c.payroll : 0) + "アップ。会社負担の社保込みで" + fmtMan(c.raise * (1 + c.siRate)) + "。";
+
+    var tbl = $("rate-table"); tbl.textContent = "";
+    c.siParts.forEach(function (x) { var tr = el("tr"); tr.appendChild(el("td", null, x[0])); tr.appendChild(el("td", "num", x[1].toFixed(3).replace(/0+$/, "").replace(/\.$/, "") + "%")); tbl.appendChild(tr); });
+    var tr = el("tr"); var td1 = el("td", null, "合計"); td1.style.fontWeight = "700"; var td2 = el("td", "num", fmtPct(c.siRate)); td2.style.fontWeight = "700"; tr.appendChild(td1); tr.appendChild(td2); tbl.appendChild(tr);
+
+    // 施策
+    R.rows.forEach(function (row) {
+      var e = itemEls[row.item.id];
+      e.cb.checked = row.on;
+      e.row.classList.toggle("off", !row.on);
+      e.basis.textContent = row.r.basis;
+      e.note.textContent = row.r.note || "";
+      e.warn.hidden = !row.r.warn; e.warn.textContent = row.r.warn || "";
+      e.amt.textContent = fmtMan(row.amount);
+      if (state.opts.expected && row.p.adopt !== undefined) { var sm = el("small", null, "満額 " + fmtMan(row.full)); e.amt.appendChild(sm); }
+      row.item.params.forEach(function (prm) {
+        var inp = e.inputs[prm.id];
+        if (document.activeElement === inp) return;
+        var v = row.p[prm.id];
+        inp.value = String(v);
+      });
+      var adoptField = e.inputs.adopt && e.inputs.adopt.closest(".field");
+      if (adoptField) adoptField.hidden = !state.opts.expected;
+    });
+    CATS.forEach(function (cat) { $("cat-total-" + cat.id).textContent = fmtMan(R.byCat[cat.id]); });
+
+    // サマリー
+    $("r-mult").textContent = R.mult.toFixed(1);
+    var ok = R.mult >= c.target;
+    var st = $("r-status");
+    st.className = "status " + (ok ? "ok" : "ng");
+    st.textContent = ok ? "目標 " + fmtN(c.target) + "倍を達成" : "目標 " + fmtN(c.target) + "倍まで あと" + fmtMan(c.target * R.cost - R.year1);
+    $("r-cost").textContent = fmtMan(R.cost);
+    $("r-cost-s").textContent = state.opts.withsi ? "賃上げ額＋会社負担の社保" : "賃上げ額（社保込み " + fmtMan(c.raise * (1 + c.siRate)) + "）";
+    $("r-year1").textContent = fmtMan(R.year1);
+    $("r-year1-s").textContent = state.opts.expected ? "採択見込みを反映" : "採択・支給された場合";
+    $("r-annual").textContent = fmtMan(R.annual);
+    $("r-mult3").textContent = R.mult3.toFixed(1) + "倍";
+    $("r-mult3-s").textContent = fmtMan(R.once + R.annual * 3) + " ÷ " + fmtMan(R.cost * 3);
+
+    // バー
+    var max = Math.max(R.cost * c.target, R.year1, 1) * 1.08;
+    var w = function (v) { return (v / max * 100) + "%"; };
+    $("bar-cost").style.width = w(R.cost);
+    $("bar-cost-v").style.left = w(R.cost); $("bar-cost-v").textContent = fmtMan(R.cost);
+    var bi = $("bar-impact"); bi.style.width = w(R.year1);
+    if (!bi.children.length) CATS.forEach(function (cat) { var s = el("div", "seg"); s.style.background = cat.color; s.dataset.cat = cat.id; bi.appendChild(s); });
+    Array.prototype.forEach.call(bi.children, function (s) { s.style.width = R.year1 > 0 ? (R.byCat[s.dataset.cat] / R.year1 * 100) + "%" : "0"; });
+    $("bar-impact-v").style.left = w(R.year1); $("bar-impact-v").textContent = fmtMan(R.year1);
+    // 目標線：トラック基準で位置合わせ
+    var area = $("bars-area"), track = $("impact-track");
+    var ax = area.getBoundingClientRect(), tx = track.getBoundingClientRect();
+    var x = (tx.left - ax.left) + tx.width * (R.cost * c.target / max);
+    $("target-line").style.left = x + "px";
+    $("target-label").style.left = x + "px";
+    $("target-label").textContent = "目標 " + fmtN(c.target) + "倍（" + fmtMan(R.cost * c.target) + "）";
+  }
+
+  /* ---------- サマリーのコピー ---------- */
+  function summaryText() {
+    var R = last, c = R.c;
+    var lines = [];
+    lines.push("【賃上げ原資シミュレーション】" + c.year + "年度 / " + c.ind.label + " / 従業員" + c.emp + "人");
+    lines.push("年間固定費アップ：" + fmtMan(R.cost) + (state.opts.withsi ? "（社保込み）" : ""));
+    lines.push("初年度インパクト：" + fmtMan(R.year1) + "（" + R.mult.toFixed(1) + "倍）" + (state.opts.expected ? "※採択見込み反映" : ""));
+    lines.push("うち毎年の継続効果：" + fmtMan(R.annual) + " / 3年累計 " + R.mult3.toFixed(1) + "倍");
+    lines.push("");
+    CATS.forEach(function (cat) {
+      var rows = R.rows.filter(function (r) { return r.on && r.item.cat === cat.id && r.amount > 0; });
+      if (!rows.length) return;
+      lines.push("■ " + cat.name + "　" + fmtMan(R.byCat[cat.id]));
+      rows.forEach(function (r) { lines.push("・" + r.item.name + "：" + fmtMan(r.amount) + "（" + r.r.basis + "）"); });
+    });
+    lines.push("");
+    lines.push("※概算です。制度の要件・金額は最新の公募要領・支給要領で確認が必要です。");
+    return lines.join("\n");
+  }
+
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  $("btn-copy").addEventListener("click", function () {
+    var text = summaryText();
+    var fallback = function () {
+      var box = document.getElementById("copybox");
+      if (!box) { box = el("textarea", "copybox"); box.id = "copybox"; box.readOnly = true; box.setAttribute("aria-label", "提案サマリー"); document.querySelector(".summary").appendChild(box); }
+      box.value = text; box.focus(); box.select();
+      toast("自動コピーできないため、表示したテキストを選択しました");
+    };
+    try {
+      navigator.clipboard.writeText(text).then(function () { toast("提案サマリーをコピーしました"); }, fallback);
+    } catch (e) { fallback(); }
+  });
+
+  $("btn-reset").addEventListener("click", function () {
+    state = fresh();
+    Object.keys(state.base).forEach(function (k) {
+      var ids = { industry: "b-industry", year: "b-year", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise", target: "b-target" };
+      $(ids[k]).value = state.base[k];
+    });
+    $("o-withsi").checked = false; $("o-expected").checked = false;
+    update(); toast("初期値に戻しました");
+  });
+
+  window.addEventListener("resize", function () { update(); });
+
+  buildForm();
+  buildCats();
+  update();
+})();
+</script>
+</body>
+</html>
