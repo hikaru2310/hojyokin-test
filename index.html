@@ -298,6 +298,8 @@ button, input, select { font: inherit; color: inherit; }
   .tab .count { position: absolute; top: 4px; right: calc(50% - 22px); padding: 2px 5px; font-size: 10px; box-shadow: 0 0 0 2px var(--surface); }
   .tab[aria-selected="true"] .count { background: var(--accent-ink); color: var(--accent); }
   .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 88px); }
+  /* スマホでは入力欄と注意書きは「提案」タブのときだけ表示する */
+  body:not([data-tab="sim"]) .panel, body:not([data-tab="sim"]) .foot { display: none; }
 }
 .tabpanel { display: grid; gap: 20px; min-width: 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; min-width: 0; }
@@ -1740,11 +1742,9 @@ button, input, select { font: inherit; color: inherit; }
 
   function setTab(id, fromUser) {
     state.tab = id; save();
-    // スマホでは入力欄の下に結果があるため、切り替えたら結果の先頭へ移動する
-    if (fromUser && window.matchMedia("(max-width: 900px)").matches) {
-      var top = document.querySelector("main.results").getBoundingClientRect().top + window.pageYOffset - 12;
-      window.scrollTo({ top: top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    }
+    document.body.dataset.tab = id;
+    // スマホでは画面ごとに表示内容が入れ替わるため、切り替えたらページの先頭へ戻す
+    if (fromUser && window.matchMedia("(max-width: 900px)").matches) window.scrollTo(0, 0);
     ["sim", "road", "report", "data"].forEach(function (k) {
       $("tab-" + k).setAttribute("aria-selected", String(k === id));
       $("panel-" + k).hidden = k !== id;
