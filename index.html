@@ -313,6 +313,23 @@ button, input, select { font: inherit; color: inherit; }
 .doc b { font-size: 13px; }
 .doc span { font-size: 12px; color: var(--muted); }
 
+/* お客様の対応スケジュール */
+.client-kpis { max-width: none; }
+.client-kpis .kpi:first-child { border-left: 0; padding-left: 0; }
+.load-wrap { overflow-x: auto; }
+.load, .load-x { display: grid; grid-template-columns: repeat(var(--n, 12), minmax(32px, 1fr)); gap: 4px; min-width: 520px; }
+.load { align-items: end; height: 110px; padding-top: 18px; border-bottom: 1px solid var(--line); }
+.load div { position: relative; background: var(--r-client); border-radius: 3px 3px 0 0; min-height: 0; }
+.load div span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--muted); white-space: nowrap; padding-bottom: 2px; font-variant-numeric: tabular-nums; }
+.load-x span { font-size: 10px; color: var(--muted); text-align: center; padding-top: 4px; font-variant-numeric: tabular-nums; }
+.tbl td.due { white-space: pre-line; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; width: 92px; }
+#client-table tr.grp td { background: var(--surface-2); border-top: 1px solid var(--line); }
+#client-table td:nth-child(3) { width: 30%; }
+.tbl .meta { font-size: 12px; color: var(--muted); }
+.kind { font-size: 11px; padding: 1px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--line); color: var(--muted); }
+.kind.do { border-color: var(--r-client); color: var(--r-client); font-weight: 700; }
+.kind.doc { border-style: dashed; }
+
 /* レポート */
 .report { display: grid; gap: 18px; }
 .report h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
@@ -513,6 +530,20 @@ button, input, select { font: inherit; color: inherit; }
       </div>
 
       <div class="tabpanel" role="tabpanel" id="panel-road" aria-labelledby="tab-road" hidden>
+        <section class="card">
+          <div class="btnrow" style="justify-content: space-between">
+            <h3>お客様の対応スケジュール</h3>
+            <button class="btn noprint" id="btn-client-copy" type="button">お客様向けにコピー</button>
+          </div>
+          <p class="lead">選んだ施策全体で、お客様が「いつまでに・何を」対応するかと、その工数の目安です。支援者（当社・税理士・社労士）が進める作業も、ヒアリングや資料提供でお客様の時間が必要な分は含めています。</p>
+          <div class="kpis client-kpis" id="client-kpis"></div>
+          <div class="load-wrap">
+            <div class="load" id="client-load"></div>
+            <div class="load-x" id="client-axis"></div>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="client-table"></table></div>
+          <div class="hint">工数は会社全体での作業時間の目安です（研修は参加者の受講時間の合計）。月ごとの棒は、各作業の工数を期間で均等に割った値です。</div>
+        </section>
         <section class="card">
           <h3>実行ロードマップ</h3>
           <p class="lead">チェックを入れた施策について、誰が・いつ・何をするかを月単位で表示します。担当を選ぶと、その人の作業だけが濃く表示されます。</p>
@@ -1207,106 +1238,107 @@ button, input, select { font: inherit; color: inherit; }
 
   // 申請などで使う共通書類。valid: 発行後の有効月数（0は期限なし）
   var DOCS = {
-    touki: { name: "履歴事項全部証明書", valid: 3 },
-    nouzei: { name: "納税証明書", valid: 3 },
-    kessan: { name: "直近2期分の決算書", valid: 0 },
-    chingin: { name: "賃金台帳", valid: 0 },
-    meibo: { name: "労働者名簿・出勤簿", valid: 0 },
-    kisoku: { name: "就業規則・賃金規程", valid: 0 },
-    gbiz: { name: "gBizIDプライム（電子申請用アカウント）", valid: 0 }
+    touki: { name: "履歴事項全部証明書", valid: 3, hours: 0.5 },
+    nouzei: { name: "納税証明書", valid: 3, hours: 1 },
+    kessan: { name: "直近2期分の決算書", valid: 0, hours: 0.5 },
+    chingin: { name: "賃金台帳", valid: 0, hours: 1 },
+    meibo: { name: "労働者名簿・出勤簿", valid: 0, hours: 1 },
+    kisoku: { name: "就業規則・賃金規程", valid: 0, hours: 1 },
+    gbiz: { name: "gBizIDプライム（電子申請用アカウント）", valid: 0, hours: 1 }
   };
 
-  // steps: [担当, 内容, 開始月(着手月=0), 期間(月)]。担当 gov は制度側の期限（期間なし）
+  // steps: [担当, 内容, 開始月(着手月=0), 期間(月), 工数(時間)]。担当 gov は制度側の期限（期間なし）
+  // 工数はお客様の作業時間の目安。担当がお客様なら実施工数、それ以外はヒアリング・資料提供・確認などの協力工数。"train" は研修の受講時間（人数×時間）
   // apply: 書類を使う申請の月 / docs: 使う書類 / tax・sr: 先生への確認事項
   var FLOW = {
     gyomu: {
       apply: 0, docs: ["chingin", "meibo", "kisoku"],
-      steps: [["sr", "交付申請書の作成・提出（申請代行）", 0, 1], ["us", "導入設備の選定・見積取得の支援", 0, 1], ["gov", "交付決定", 1],
-        ["client", "事業場内最低賃金の引上げ", 1, 1], ["client", "設備の発注・導入・支払い", 2, 2], ["sr", "事業実績報告・支給申請", 4, 1],
+      steps: [["sr", "交付申請書の作成・提出（申請代行）", 0, 1, 2], ["us", "導入設備の選定・見積取得の支援", 0, 1, 2], ["gov", "交付決定", 1],
+        ["client", "事業場内最低賃金の引上げ", 1, 1, 2], ["client", "設備の発注・導入・支払い", 2, 2, 8], ["sr", "事業実績報告・支給申請", 4, 1, 2],
         ["gov", "助成金の入金", 6], ["tax", "助成金の会計処理・圧縮記帳の検討", 6, 1]],
       tax: "助成金で取得する設備について、圧縮記帳の適用可否と助成金収入の計上時期をご確認ください。",
       sr: "事業場内最低賃金の引上げ方法（就業規則・賃金規程の改定）と、申請書類の作成・提出をお願いします。"
     },
     cu_seishain: {
       apply: 0, docs: ["chingin", "meibo", "kisoku"],
-      steps: [["sr", "キャリアアップ計画の作成・提出", 0, 1], ["sr", "就業規則に正社員転換制度を規定", 0, 1], ["client", "対象者を正社員へ転換（賃金3%以上増）", 1, 1],
-        ["client", "転換後6か月分の賃金支払い", 1, 6], ["sr", "第1期 支給申請", 7, 2], ["gov", "第1期 支給決定・入金", 10], ["sr", "第2期 支給申請", 13, 2],
+      steps: [["sr", "キャリアアップ計画の作成・提出", 0, 1, 1], ["sr", "就業規則に正社員転換制度を規定", 0, 1, 2], ["client", "対象者を正社員へ転換（賃金3%以上増）", 1, 1, 3],
+        ["client", "転換後6か月分の賃金支払い", 1, 6, 1], ["sr", "第1期 支給申請", 7, 2, 2], ["gov", "第1期 支給決定・入金", 10], ["sr", "第2期 支給申請", 13, 2, 2],
         ["tax", "助成金収入の計上時期の確認", 10, 1]],
       tax: "キャリアアップ助成金の受給に伴う収入の計上時期をご確認ください。",
       sr: "キャリアアップ計画の提出、正社員転換制度の就業規則への規定、支給申請をお願いします。"
     },
     cu_chingin: {
       apply: 0, docs: ["chingin", "kisoku"],
-      steps: [["sr", "キャリアアップ計画の作成・提出", 0, 1], ["sr", "賃金規定の改定（3%以上）", 1, 1], ["client", "改定後の賃金で6か月支払い", 1, 6],
-        ["sr", "支給申請", 7, 2], ["gov", "支給決定・入金", 10]],
+      steps: [["sr", "キャリアアップ計画の作成・提出", 0, 1, 1], ["sr", "賃金規定の改定（3%以上）", 1, 1, 2], ["client", "改定後の賃金で6か月支払い", 1, 6, 1],
+        ["sr", "支給申請", 7, 2, 2], ["gov", "支給決定・入金", 10]],
       sr: "有期・パートの賃金規定を3%以上増額改定する手続きと、支給申請をお願いします。"
     },
     jinzai: {
       apply: 0, docs: ["chingin", "meibo"],
-      steps: [["sr", "職業訓練実施計画届の提出（開始1か月前まで）", 0, 1], ["us", "AI研修カリキュラムの設計", 0, 1], ["client", "研修の実施・受講", 2, 2],
-        ["sr", "支給申請（訓練終了から2か月以内）", 4, 2], ["gov", "助成金の入金", 7], ["tax", "研修費を教育訓練費として集計", 4, 1]],
+      steps: [["sr", "職業訓練実施計画届の提出（開始1か月前まで）", 0, 1, 2], ["us", "AI研修カリキュラムの設計", 0, 1, 2], ["client", "研修の実施・受講", 2, 2, "train"],
+        ["sr", "支給申請（訓練終了から2か月以内）", 4, 2, 2], ["gov", "助成金の入金", 7], ["tax", "研修費を教育訓練費として集計", 4, 1]],
       tax: "研修費を教育訓練費として集計し、賃上げ促進税制の上乗せ要件（教育訓練費の増加）に使えるかご確認ください。",
       sr: "職業訓練実施計画届の提出と、訓練終了後の支給申請をお願いします。"
     },
     it_ai: {
       apply: 1, docs: ["touki", "nouzei", "kessan", "gbiz"],
-      steps: [["us", "gBizIDプライム取得・SECURITY ACTION宣言の支援", 0, 1], ["us", "申請書の作成（IT導入支援事業者と共同申請）", 0, 2], ["gov", "公募締切（目安）", 1],
-        ["gov", "交付決定", 2], ["client", "ツールの契約・導入・支払い", 2, 2], ["us", "事業実績報告", 4, 1], ["gov", "補助金の入金", 6],
-        ["tax", "補助金収入の計上・圧縮記帳の検討", 6, 1], ["client", "効果報告（導入後の賃上げ・生産性）", 12, 1]],
+      steps: [["us", "gBizIDプライム取得・SECURITY ACTION宣言の支援", 0, 1, 2], ["us", "申請書の作成（IT導入支援事業者と共同申請）", 0, 2, 3], ["gov", "公募締切（目安）", 1],
+        ["gov", "交付決定", 2], ["client", "ツールの契約・導入・支払い", 2, 2, 8], ["us", "事業実績報告", 4, 1, 1], ["gov", "補助金の入金", 6],
+        ["tax", "補助金収入の計上・圧縮記帳の検討", 6, 1], ["client", "効果報告（導入後の賃上げ・生産性）", 12, 1, 2]],
       tax: "補助金で導入するソフトウェア等について、圧縮記帳の適用可否と補助金収入の計上時期をご確認ください。"
     },
     jizokuka: {
       apply: 1, docs: ["touki", "nouzei", "kessan", "gbiz"],
-      steps: [["us", "経営計画・補助事業計画の作成", 0, 1], ["client", "商工会議所・商工会で事業支援計画書（様式4）を取得", 0, 1], ["sr", "賃金引上げ特例の要件確認（最低賃金+50円）", 0, 1],
-        ["gov", "申請締切（目安）", 1], ["gov", "採択発表", 4], ["client", "販路開拓の実施・支払い", 4, 4], ["us", "実績報告", 8, 1],
+      steps: [["us", "経営計画・補助事業計画の作成", 0, 1, 4], ["client", "商工会議所・商工会で事業支援計画書（様式4）を取得", 0, 1, 3], ["sr", "賃金引上げ特例の要件確認（最低賃金+50円）", 0, 1, 1],
+        ["gov", "申請締切（目安）", 1], ["gov", "採択発表", 4], ["client", "販路開拓の実施・支払い", 4, 4, 10], ["us", "実績報告", 8, 1, 2],
         ["gov", "補助金の入金", 10], ["tax", "補助金収入の計上", 10, 1]],
       tax: "補助金収入の計上時期をご確認ください。",
       sr: "賃金引上げ特例を使う場合、事業場内最低賃金の引上げ要件を満たせるかご確認ください。"
     },
     shoryoku_cat: {
       apply: 1, docs: ["touki", "nouzei", "kessan", "gbiz"],
-      steps: [["us", "カタログ製品の選定・販売事業者との共同申請", 0, 2], ["gov", "交付決定", 2], ["client", "製品の導入・支払い", 2, 2], ["us", "実績報告", 4, 1],
-        ["gov", "補助金の入金", 6], ["tax", "圧縮記帳の検討", 6, 1], ["client", "効果報告（3年間）", 12, 1]],
+      steps: [["us", "カタログ製品の選定・販売事業者との共同申請", 0, 2, 3], ["gov", "交付決定", 2], ["client", "製品の導入・支払い", 2, 2, 6], ["us", "実績報告", 4, 1, 1],
+        ["gov", "補助金の入金", 6], ["tax", "圧縮記帳の検討", 6, 1], ["client", "効果報告（3年間）", 12, 1, 2]],
       tax: "補助金で取得する設備について、圧縮記帳の適用可否と補助金収入の計上時期をご確認ください。"
     },
     shoryoku_gen: {
       apply: 2, docs: ["touki", "nouzei", "kessan", "chingin", "gbiz"],
-      steps: [["us", "事業計画書の作成", 0, 2], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "設備の発注・導入（交付決定後）", 6, 6],
-        ["us", "実績報告", 12, 1], ["sr", "賃上げ要件の達成状況の確認", 12, 1], ["gov", "補助金の入金", 14], ["tax", "圧縮記帳・減価償却の処理", 14, 1]],
+      steps: [["us", "事業計画書の作成", 0, 2, 8], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "設備の発注・導入（交付決定後）", 6, 6, 20],
+        ["us", "実績報告", 12, 1, 3], ["sr", "賃上げ要件の達成状況の確認", 12, 1, 1], ["gov", "補助金の入金", 14], ["tax", "圧縮記帳・減価償却の処理", 14, 1]],
       tax: "補助金で取得する設備について、圧縮記帳・減価償却の処理と補助金収入の計上時期をご確認ください。",
       sr: "賃上げ要件（給与支給総額・事業場内最低賃金）の達成状況の確認をお願いします。"
     },
     monodukuri: {
       apply: 2, docs: ["touki", "nouzei", "kessan", "chingin", "gbiz"],
-      steps: [["us", "事業計画書の作成", 0, 2], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "設備の発注・導入（交付決定後）", 6, 5],
-        ["us", "実績報告", 11, 1], ["sr", "給与支給総額・最低賃金の賃上げ要件の確認", 11, 1], ["gov", "補助金の入金", 13], ["tax", "圧縮記帳・減価償却の処理", 13, 1]],
+      steps: [["us", "事業計画書の作成", 0, 2, 8], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "設備の発注・導入（交付決定後）", 6, 5, 20],
+        ["us", "実績報告", 11, 1, 3], ["sr", "給与支給総額・最低賃金の賃上げ要件の確認", 11, 1, 1], ["gov", "補助金の入金", 13], ["tax", "圧縮記帳・減価償却の処理", 13, 1]],
       tax: "補助金で取得する設備について、圧縮記帳・減価償却の処理と補助金収入の計上時期をご確認ください。",
       sr: "賃上げ要件（給与支給総額の年平均成長率・事業場内最低賃金）の達成状況の確認をお願いします。"
     },
     shinjigyo: {
       apply: 2, docs: ["touki", "nouzei", "kessan", "chingin", "gbiz"],
-      steps: [["us", "新事業の事業計画書の作成", 0, 2], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "建物・設備等の発注・導入", 6, 8],
-        ["us", "実績報告", 14, 1], ["sr", "賃上げ要件の達成状況の確認", 14, 1], ["gov", "補助金の入金", 16], ["tax", "圧縮記帳・減価償却の処理", 16, 1]],
+      steps: [["us", "新事業の事業計画書の作成", 0, 2, 10], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "建物・設備等の発注・導入", 6, 8, 30],
+        ["us", "実績報告", 14, 1, 4], ["sr", "賃上げ要件の達成状況の確認", 14, 1, 1], ["gov", "補助金の入金", 16], ["tax", "圧縮記帳・減価償却の処理", 16, 1]],
       tax: "補助金で取得する建物・設備について、圧縮記帳・減価償却の処理と補助金収入の計上時期をご確認ください。",
       sr: "賃上げ要件の達成状況の確認をお願いします。"
     },
     tax: {
       docs: [],
-      steps: [["client", "賃上げの実施", 0, 1], ["sr", "給与等支給額の集計資料の作成", 10, 1], ["tax", "適用判定・申告書別表の作成", 11, 1], ["gov", "決算から2か月以内に申告（決算を12か月目と仮定）", 12]],
+      steps: [["client", "賃上げの実施", 0, 1, 2], ["sr", "給与等支給額の集計資料の作成", 10, 1, 1], ["tax", "適用判定・申告書別表の作成", 11, 1, 1], ["gov", "決算から2か月以内に申告（決算を12か月目と仮定）", 12]],
       tax: "中小企業向け賃上げ促進税制の適用可否（給与等支給額の増加率）と、教育訓練費・くるみん等の上乗せ要件をご確認ください。",
       sr: "給与等支給額の前年比較ができるよう、賃金台帳の集計にご協力ください。"
     },
     dc: {
       docs: ["kisoku"],
-      steps: [["us", "制度設計・運営管理機関の選定", 0, 1], ["sr", "労使合意・規約作成・就業規則の改定", 1, 1], ["gov", "厚生局へ規約の承認申請", 2],
-        ["client", "従業員説明会・加入意思の確認", 2, 1], ["gov", "拠出開始（承認後）", 4], ["tax", "給与計算・年末調整の取扱い確認", 4, 1],
+      steps: [["us", "制度設計・運営管理機関の選定", 0, 1, 2], ["sr", "労使合意・規約作成・就業規則の改定", 1, 1, 3], ["gov", "厚生局へ規約の承認申請", 2],
+        ["client", "従業員説明会・加入意思の確認", 2, 1, 4], ["gov", "拠出開始（承認後）", 4], ["tax", "給与計算・年末調整の取扱い確認", 4, 1, 0.5],
         ["sr", "標準報酬月額の改定の確認", 4, 1]],
       tax: "選択制確定拠出年金の導入に伴う、給与計算・源泉徴収・年末調整上の取扱いをご確認ください。",
       sr: "労使合意・規約作成・就業規則の改定と、導入後の標準報酬月額の改定についてご確認ください。"
     },
     ai: {
       docs: [],
-      steps: [["us", "業務の棚卸し・対象業務の選定", 0, 1], ["us", "AIワークフローの構築", 1, 2], ["client", "運用開始・定着", 3, 3], ["us", "効果測定・改善", 6, 1]]
+      steps: [["us", "業務の棚卸し・対象業務の選定", 0, 1, 4], ["us", "AIワークフローの構築", 1, 2, 3], ["client", "運用開始・定着", 3, 3, 10], ["us", "効果測定・改善", 6, 1, 1]]
     }
   };
 
@@ -1363,40 +1395,150 @@ button, input, select { font: inherit; color: inherit; }
     });
     $("road-note").textContent = "着手予定月 " + monthLabel(0, true) + " を起点にした目安です。公募スケジュールは公募回ごとに変わるため、確定したら実際の日付に合わせて調整してください。";
     renderDocs(rows);
+    renderClient(R, n);
   }
 
-  function renderDocs(rows) {
-    var box = $("docs"); box.textContent = "";
-    var use = {};
+  // 書類ごとの取得計画。有効期限のある書類は、期限内にまとめて使える申請をグループにする
+  function docPlan(rows) {
+    var use = {}, plan = [];
     rows.forEach(function (r) {
       var f = FLOW[r.item.id];
       (f.docs || []).forEach(function (k) { (use[k] = use[k] || []).push({ name: r.item.name, m: f.apply || 0 }); });
     });
-    var keys = Object.keys(DOCS).filter(function (k) { return use[k]; });
-    if (!keys.length) { box.appendChild(el("div", "empty", "選択中の施策では、共通で使う書類はありません。")); return; }
-    keys.forEach(function (k) {
+    Object.keys(DOCS).filter(function (k) { return use[k]; }).forEach(function (k) {
       var doc = DOCS[k], list = use[k].slice().sort(function (a, b) { return a.m - b.m; });
       if (doc.valid) {
-        // 有効期限内にまとめて使える申請をグループ化
-        var groups = [], cur = null;
+        var cur = null;
         list.forEach(function (u) {
-          if (!cur || u.m - cur.m > doc.valid - 1) { cur = { m: u.m, names: [] }; groups.push(cur); }
+          if (!cur || u.m - cur.m > doc.valid - 1) { cur = { doc: doc, m: u.m, names: [] }; plan.push(cur); }
           cur.names.push(u.name);
         });
-        groups.forEach(function (gp) {
-          var d = el("div", "doc");
-          d.appendChild(el("b", null, doc.name + "：" + monthLabel(gp.m, true) + " に取得"));
-          d.appendChild(el("span", null, (gp.names.length > 1 ? "1回の取得で " : "") + gp.names.join("・") + " の申請に使えます（発行後" + doc.valid + "か月以内）"));
-          box.appendChild(d);
-        });
       } else {
-        var d = el("div", "doc");
-        d.appendChild(el("b", null, doc.name + "：" + monthLabel(list[0].m, true) + " までに準備"));
-        var names = list.map(function (u) { return u.name; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
-        d.appendChild(el("span", null, (names.length > 1 ? "共通で使えます：" : "使う制度：") + names.join("・")));
-        box.appendChild(d);
+        plan.push({ doc: doc, m: list[0].m, names: list.map(function (u) { return u.name; }).filter(function (v, i, a) { return a.indexOf(v) === i; }) });
       }
     });
+    return plan;
+  }
+
+  function renderDocs(rows) {
+    var box = $("docs"); box.textContent = "";
+    var plan = docPlan(rows);
+    if (!plan.length) { box.appendChild(el("div", "empty", "選択中の施策では、共通で使う書類はありません。")); return; }
+    plan.forEach(function (gp) {
+      var d = el("div", "doc");
+      if (gp.doc.valid) {
+        d.appendChild(el("b", null, gp.doc.name + "：" + monthLabel(gp.m, true) + " に取得"));
+        d.appendChild(el("span", null, (gp.names.length > 1 ? "1回の取得で " : "") + gp.names.join("・") + " の申請に使えます（発行後" + gp.doc.valid + "か月以内）"));
+      } else {
+        d.appendChild(el("b", null, gp.doc.name + "：" + monthLabel(gp.m, true) + " までに準備"));
+        d.appendChild(el("span", null, (gp.names.length > 1 ? "共通で使えます：" : "使う制度：") + gp.names.join("・")));
+      }
+      box.appendChild(d);
+    });
+  }
+
+  /* ---------- お客様の対応スケジュール ---------- */
+  function stepHours(st, r) {
+    var h = st[4];
+    if (h === "train") h = (r.p.n || 0) * (r.p.hours || 0);
+    return Number(h) || 0;
+  }
+  function fmtH(h) { return "約" + (Math.round(h * 2) / 2).toLocaleString("ja-JP") + "時間"; }
+
+  function clientTasks(R) {
+    var rows = activeRows(R), list = [];
+    rows.forEach(function (r) {
+      FLOW[r.item.id].steps.forEach(function (st) {
+        if (st[0] === "gov") return;
+        var h = stepHours(st, r);
+        if (st[0] !== "client" && !h) return;
+        list.push({
+          kind: st[0] === "client" ? "do" : "help", who: st[0],
+          label: st[0] === "client" ? st[1] : st[1] + "への協力",
+          sub: st[0] === "client" ? "" : ROLES[st[0]].label + "へのヒアリング対応・資料提供・内容確認",
+          items: [r.item.name], start: st[2], end: st[2] + (st[3] || 1) - 1, hours: h
+        });
+      });
+    });
+    docPlan(rows).forEach(function (gp) {
+      list.push({ kind: "doc", who: "client", label: gp.doc.name + "の取得・準備", sub: gp.doc.valid ? "発行後" + gp.doc.valid + "か月以内のものを使用" : "",
+        items: gp.names, start: Math.max(0, gp.m - 1), end: gp.m, hours: gp.doc.hours });
+    });
+    list.sort(function (a, b) { return a.end - b.end || a.start - b.start || (a.kind === "doc" ? -1 : 0); });
+    return list;
+  }
+
+  var KIND_LABEL = { do: "お客様が実施", help: "支援者への協力", doc: "書類の準備" };
+
+  function renderClient(R, n) {
+    var tasks = clientTasks(R);
+    var total = 0, by = { do: 0, help: 0, doc: 0 }, load = [];
+    for (var i = 0; i < n; i++) load.push(0);
+    tasks.forEach(function (t) {
+      total += t.hours; by[t.kind] += t.hours;
+      var span = t.end - t.start + 1;
+      for (var m = t.start; m <= t.end; m++) if (m < n) load[m] += t.hours / span;
+    });
+    var peak = 0; load.forEach(function (v, i) { if (v > load[peak]) peak = i; });
+    var endM = tasks.length ? tasks[tasks.length - 1].end : 0;
+
+    var k = $("client-kpis"); k.textContent = "";
+    [["対応事項", tasks.length + "件", "書類準備を含む"],
+     ["工数の目安（合計）", fmtH(total), "実施 " + fmtH(by.do) + "・協力 " + fmtH(by.help) + "・書類 " + fmtH(by.doc)],
+     ["負荷が高い月", tasks.length ? monthLabel(peak, true) : "—", tasks.length ? fmtH(load[peak]) : ""],
+     ["お客様の対応が終わる月", tasks.length ? monthLabel(endM, true) : "—", tasks.length ? "着手から" + (endM + 1) + "か月" : ""]
+    ].forEach(function (x) {
+      var d = el("div", "kpi"); d.appendChild(el("span", "k", x[0])); d.appendChild(el("span", "v", x[1])); d.appendChild(el("span", "s", x[2])); k.appendChild(d);
+    });
+
+    var chart = $("client-load"), axis = $("client-axis");
+    chart.textContent = ""; axis.textContent = "";
+    chart.style.setProperty("--n", n); axis.style.setProperty("--n", n);
+    var max = Math.max.apply(null, load.concat([1]));
+    load.forEach(function (v, i) {
+      var b = el("div"); b.style.height = (v / max * 84) + "px"; b.title = monthLabel(i, true) + "：" + fmtH(v);
+      if (v > 0) b.appendChild(el("span", null, Math.round(v * 2) / 2 + "h"));
+      chart.appendChild(b);
+      axis.appendChild(el("span", null, monthLabel(i)));
+    });
+
+    var t = $("client-table"); t.textContent = "";
+    if (!tasks.length) { var tr0 = el("tr"); tr0.appendChild(el("td", "empty", "「提案・インパクト」タブで施策にチェックを入れると表示されます。")); t.appendChild(tr0); return; }
+    var hr = el("tr"); ["作業期間", "対応内容", "関連する制度", "区分", "工数目安"].forEach(function (x, i) { hr.appendChild(el("th", i === 4 ? "r" : null, x)); }); t.appendChild(hr);
+    var curEnd = null;
+    tasks.forEach(function (x) {
+      if (x.end !== curEnd) {
+        // 期限の月ごとに見出し行と小計
+        curEnd = x.end;
+        var same = tasks.filter(function (y) { return y.end === curEnd; });
+        var sum = same.reduce(function (a, y) { return a + y.hours; }, 0);
+        var gr = el("tr", "grp"); var gd = el("td"); gd.colSpan = 5;
+        gd.appendChild(el("b", null, monthLabel(curEnd, true) + "末までに対応"));
+        gd.appendChild(el("span", "meta", "　" + same.length + "件・" + fmtH(sum)));
+        gr.appendChild(gd); t.appendChild(gr);
+      }
+      var tr = el("tr");
+      tr.appendChild(el("td", "due", x.end > x.start ? monthLabel(x.start, true) + "〜\n" + monthLabel(x.end, true) : monthLabel(x.end, true)));
+      var c = el("td"); c.appendChild(el("div", null, x.label)); if (x.sub) c.appendChild(el("div", "meta", x.sub)); tr.appendChild(c);
+      tr.appendChild(el("td", "meta", x.items.join("・")));
+      var kd = el("td"); var chip = el("span", "kind " + x.kind, KIND_LABEL[x.kind]); kd.appendChild(chip); tr.appendChild(kd);
+      tr.appendChild(el("td", "r", x.hours ? fmtH(x.hours) : "—"));
+      t.appendChild(tr);
+    });
+  }
+
+  function clientText() {
+    var tasks = clientTasks(last), b = state.base, L = [], total = 0;
+    tasks.forEach(function (t) { total += t.hours; });
+    L.push("【お客様の対応スケジュール】" + (b.company ? b.company + " 様" : ""));
+    L.push("着手予定月 " + monthLabel(0, true) + " / 対応事項 " + tasks.length + "件 / 工数の目安 合計" + fmtH(total));
+    L.push("");
+    tasks.forEach(function (x) {
+      L.push("・" + monthLabel(x.end, true) + "末まで：" + x.label + "（" + KIND_LABEL[x.kind] + "、" + (x.hours ? fmtH(x.hours) : "—") + "）／" + x.items.join("・"));
+    });
+    L.push("");
+    L.push("※ 工数は会社全体での作業時間の目安です。研修は参加者の受講時間の合計です。スケジュールは公募回に合わせて調整します。");
+    return L.join("\n");
   }
 
   function reportData(R) {
@@ -1405,7 +1547,10 @@ button, input, select { font: inherit; color: inherit; }
     rows.forEach(function (r) {
       var f = FLOW[r.item.id];
       ["tax", "sr", "client", "us"].forEach(function (who) {
-        var tasks = f.steps.filter(function (st) { return st[0] === who; }).map(function (st) { return st[1] + "（" + monthLabel(st[2], true) + "〜）"; });
+        var tasks = f.steps.filter(function (st) { return st[0] === who; }).map(function (st) {
+          var h = who === "client" ? stepHours(st, r) : 0;
+          return st[1] + "（" + monthLabel(st[2], true) + "〜" + (h ? "、" + fmtH(h) : "") + "）";
+        });
         if (tasks.length || f[who]) by[who].push({ name: r.item.name, ask: f[who] || "", tasks: tasks });
       });
     });
@@ -1580,6 +1725,7 @@ button, input, select { font: inherit; color: inherit; }
       roles.appendChild(bt);
     });
     $("btn-save").addEventListener("click", saveProposal);
+    $("btn-client-copy").addEventListener("click", function () { copyText(clientText(), "お客様の対応スケジュールをコピーしました", $("client-table").parentNode); });
     $("btn-report-copy").addEventListener("click", function () { copyText(reportText(), "レポートをコピーしました", $("report")); });
     $("btn-report-print").hidden = inFrame;
     $("btn-report-print").addEventListener("click", function () { window.print(); });
