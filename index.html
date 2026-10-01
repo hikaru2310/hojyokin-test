@@ -29,6 +29,10 @@
   --c-ai: #C8603F;
   --c-cost: #5F6B78;
   --shadow: 0 1px 2px rgba(21,33,46,.06), 0 4px 16px rgba(21,33,46,.05);
+  --r-client: #D9702A;
+  --r-us: #2F5DA8;
+  --r-tax: #2A8656;
+  --r-sr: #94468F;
   --f-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
   --f-display: "BIZ UDPMincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
 }
@@ -55,6 +59,10 @@
     --c-ai: #E58C6C;
     --c-cost: #8C99A7;
     --shadow: none;
+    --r-client: #F0A060;
+    --r-us: #7FA8E6;
+    --r-tax: #6CC496;
+    --r-sr: #CC8BC8;
   }
 }
 :root[data-theme="dark"] {
@@ -79,9 +87,14 @@
   --c-ai: #E58C6C;
   --c-cost: #8C99A7;
   --shadow: none;
+  --r-client: #F0A060;
+  --r-us: #7FA8E6;
+  --r-tax: #6CC496;
+  --r-sr: #CC8BC8;
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -137,13 +150,14 @@ button, input, select { font: inherit; color: inherit; }
 .field.full { grid-column: 1 / -1; }
 .field label { font-size: 12px; color: var(--muted); }
 .field .ctl { position: relative; display: flex; align-items: center; }
-.field input[type="number"], .field select {
+.field input[type="number"], .field input[type="text"], .field input[type="date"], .field input[type="month"], .field select {
   width: 100%; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;
   background: var(--surface-2); font-variant-numeric: tabular-nums;
 }
 .field input[type="number"] { padding-right: 42px; text-align: right; }
 .field .unit { position: absolute; right: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
-.field .hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.field .hint, .hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.hint.warn { color: var(--warn); }
 .checks { display: grid; gap: 8px; }
 .check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; cursor: pointer; }
 .check input { margin-top: 3px; accent-color: var(--accent); }
@@ -245,6 +259,82 @@ button, input, select { font: inherit; color: inherit; }
   background: var(--ink); color: var(--paper); padding: 8px 16px; border-radius: 6px; font-size: 13px;
 }
 .copybox { width: 100%; height: 220px; margin-top: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+/* 必須・任意 */
+.badge { display: inline-block; font-size: 10px; line-height: 1.5; padding: 0 5px; border-radius: 3px; margin-left: 6px; vertical-align: 1px; font-weight: 700; }
+.badge.req { background: var(--accent); color: var(--accent-ink); }
+.badge.opt { border: 1px solid var(--line); color: var(--muted); font-weight: 400; }
+
+/* タブ */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab {
+  border: 0; background: none; padding: 10px 14px; font-size: 14px; font-weight: 700; color: var(--muted);
+  border-bottom: 3px solid transparent; margin-bottom: -1px; cursor: pointer; white-space: nowrap;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab .count { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.tabpanel { display: grid; gap: 20px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.card h3 { margin: 0; font-size: 16px; }
+.card .lead { margin: 0; font-size: 13px; color: var(--muted); max-width: 72ch; }
+.empty { font-size: 13px; color: var(--muted); padding: 12px 0; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ロードマップ */
+.roles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.role-chip {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+}
+.role-chip[aria-pressed="true"] { border-color: var(--ink); font-weight: 700; }
+.role-chip i, .rwho i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.road-legend { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.road-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.road { min-width: 820px; font-size: 12px; --n: 12; }
+.rrow { display: grid; grid-template-columns: 250px minmax(0, 1fr); align-items: stretch; transition: opacity .2s; }
+.rrow.dim { opacity: .2; }
+.rrow.head { position: sticky; top: 0; background: var(--surface); z-index: 1; border-bottom: 1px solid var(--line); }
+.rrow.grp { background: var(--surface-2); border-top: 1px solid var(--line); }
+.rrow.grp .rl { font-weight: 700; font-size: 13px; }
+.rrow.grp .rl i { width: 4px; align-self: stretch; border-radius: 2px; display: inline-block; }
+.rl { padding: 5px 10px; display: flex; align-items: center; gap: 8px; min-width: 0; line-height: 1.4; }
+.rwho { flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); width: 58px; }
+.lane {
+  position: relative; min-height: 28px;
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px);
+  background-size: calc(100% / var(--n)) 100%;
+}
+.months { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+.months span { text-align: center; padding: 6px 0; color: var(--muted); font-variant-numeric: tabular-nums; border-left: 1px solid var(--line); }
+.rbar { position: absolute; top: 7px; bottom: 7px; border-radius: 3px; }
+.rdia { position: absolute; top: 50%; width: 12px; height: 12px; transform: translate(-50%, -50%) rotate(45deg); background: var(--ink); }
+.docs { display: grid; gap: 8px; }
+.doc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.doc b { font-size: 13px; }
+.doc span { font-size: 12px; color: var(--muted); }
+
+/* レポート */
+.report { display: grid; gap: 18px; }
+.report h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.report h4 i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.report ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 13px; }
+.report .meta { font-size: 12px; color: var(--muted); }
+.report .ask { font-size: 13px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 6px 6px 0; }
+.tbl-wrap { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th, .tbl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tbl th { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.tbl td.r, .tbl th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.field input[type="url"] { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+
+@media print {
+  body { background: #fff; padding-inline: 0; }
+  .panel, .top .actions, .tabs, .toast, .noprint { display: none !important; }
+  .layout { display: block; }
+  .summary, .cat, .card { box-shadow: none; break-inside: avoid; }
+  .road-wrap { overflow: visible; }
+}
+
 @media (prefers-reduced-motion: reduce) { .fill, .seg, .bar-val, .target, .target-label { transition: none; } }
 </style>
 </head>
@@ -257,28 +347,56 @@ button, input, select { font: inherit; color: inherit; }
     </div>
     <div class="actions">
       <button class="btn" id="btn-reset" type="button">初期値に戻す</button>
-      <button class="btn primary" id="btn-copy" type="button">提案サマリーをコピー</button>
+      <button class="btn" id="btn-copy" type="button">提案サマリーをコピー</button>
+      <button class="btn primary" id="btn-save" type="button">提案を保存</button>
     </div>
   </header>
 
   <div class="layout">
     <aside class="panel" aria-label="入力">
       <section>
+        <h2>顧客情報</h2>
+        <div class="fields">
+          <div class="field full">
+            <label for="b-company">会社名<span class="badge req">必須</span></label>
+            <input type="text" id="b-company" autocomplete="organization" placeholder="例：株式会社サンプル製作所">
+          </div>
+          <div class="field">
+            <label for="b-contact">ご担当者<span class="badge opt">任意</span></label>
+            <input type="text" id="b-contact">
+          </div>
+          <div class="field">
+            <label for="b-sales">営業担当<span class="badge opt">任意</span></label>
+            <input type="text" id="b-sales">
+          </div>
+          <div class="field">
+            <label for="b-meetdate">商談日</label>
+            <input type="date" id="b-meetdate">
+          </div>
+          <div class="field">
+            <label for="b-start">着手予定月</label>
+            <input type="month" id="b-start">
+          </div>
+          <div class="field full"><div class="hint">着手予定月はロードマップの起点になります。会社名は「提案を保存」に必要です。</div></div>
+        </div>
+      </section>
+
+      <section>
         <h2>企業情報</h2>
         <div class="fields">
           <div class="field full">
-            <label for="b-industry">業種</label>
+            <label for="b-industry">業種<span class="badge req">必須</span></label>
             <select id="b-industry"></select>
           </div>
           <div class="field">
-            <label for="b-form">事業形態</label>
+            <label for="b-form">事業形態<span class="badge opt">任意</span></label>
             <select id="b-form">
               <option value="corp">法人</option>
               <option value="sole">個人事業主</option>
             </select>
           </div>
           <div class="field" id="f-capital">
-            <label for="b-capital">資本金</label>
+            <label for="b-capital">資本金<span class="badge opt">任意</span></label>
             <div class="ctl"><input type="number" id="b-capital" min="0" step="100" inputmode="numeric"><span class="unit">万円</span></div>
           </div>
           <div class="field">
@@ -289,23 +407,23 @@ button, input, select { font: inherit; color: inherit; }
             </select>
           </div>
           <div class="field">
-            <label for="b-pref">都道府県</label>
+            <label for="b-pref">都道府県<span class="badge req">必須</span></label>
             <select id="b-pref"></select>
           </div>
           <div class="field">
-            <label for="b-emp">従業員数</label>
+            <label for="b-emp">従業員数<span class="badge req">必須</span></label>
             <div class="ctl"><input type="number" id="b-emp" min="1" step="1" inputmode="numeric"><span class="unit">人</span></div>
           </div>
           <div class="field">
-            <label for="b-fixed">うち有期・パート</label>
+            <label for="b-fixed">うち有期・パート<span class="badge opt">任意</span></label>
             <div class="ctl"><input type="number" id="b-fixed" min="0" step="1" inputmode="numeric"><span class="unit">人</span></div>
           </div>
           <div class="field">
-            <label for="b-salary">平均年収（1人）</label>
+            <label for="b-salary">平均年収（1人）<span class="badge req">必須</span></label>
             <div class="ctl"><input type="number" id="b-salary" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
           </div>
           <div class="field">
-            <label for="b-minwage">事業場内最低賃金</label>
+            <label for="b-minwage">事業場内最低賃金<span class="badge opt">任意</span></label>
             <div class="ctl"><input type="number" id="b-minwage" min="0" step="1" inputmode="numeric"><span class="unit">円/時</span></div>
           </div>
           <div class="field">
@@ -317,11 +435,12 @@ button, input, select { font: inherit; color: inherit; }
             <button type="button" class="linkbtn" id="btn-region-auto" hidden>都道府県の金額に戻す</button>
           </div>
           <div class="field full">
-            <label for="b-corptax" id="l-corptax">年間の法人税額（目安）</label>
+            <label for="b-corptax"><span id="l-corptax">年間の法人税額（目安）</span><span class="badge opt">任意</span></label>
             <div class="ctl"><input type="number" id="b-corptax" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
             <div class="hint" id="corptax-hint">賃上げ促進税制の控除上限（法人税額の20%）に使います。赤字の場合は0。</div>
           </div>
         </div>
+        <div class="hint" style="margin-top:10px">任意項目を入れると分析が増えます。資本金→中小企業の判定が広がる／有期・パート→キャリアアップ助成金／事業場内最低賃金→業務改善助成金・補助率2/3の判定／法人税額→税額控除の上限。</div>
         <div id="sme-notice" class="notice" hidden></div>
       </section>
 
@@ -329,12 +448,12 @@ button, input, select { font: inherit; color: inherit; }
         <h2>賃上げ計画</h2>
         <div class="fields">
           <div class="field full">
-            <label for="b-raise">賃上げによる年間固定費アップ</label>
+            <label for="b-raise">賃上げによる年間固定費アップ<span class="badge req">必須</span></label>
             <div class="ctl"><input type="number" id="b-raise" min="0" step="10" inputmode="numeric"><span class="unit">万円</span></div>
             <div class="hint" id="raise-hint"></div>
           </div>
           <div class="field full">
-            <label for="b-prevpay">前年度の給与総額（任意）</label>
+            <label for="b-prevpay">前年度の給与総額<span class="badge opt">任意</span></label>
             <div class="ctl"><input type="number" id="b-prevpay" min="0" step="100" inputmode="numeric"><span class="unit">万円</span></div>
             <div class="hint" id="prevpay-hint"></div>
           </div>
@@ -357,6 +476,14 @@ button, input, select { font: inherit; color: inherit; }
     </aside>
 
     <main class="results">
+      <nav class="tabs" role="tablist" aria-label="表示の切り替え">
+        <button class="tab" role="tab" id="tab-sim" aria-controls="panel-sim" type="button">提案・インパクト</button>
+        <button class="tab" role="tab" id="tab-road" aria-controls="panel-road" type="button">実行ロードマップ</button>
+        <button class="tab" role="tab" id="tab-report" aria-controls="panel-report" type="button">専門家連携レポート</button>
+        <button class="tab" role="tab" id="tab-data" aria-controls="panel-data" type="button">保存データ<span class="count" id="data-count"></span></button>
+      </nav>
+
+      <div class="tabpanel" role="tabpanel" id="panel-sim" aria-labelledby="tab-sim">
       <section class="summary" aria-label="試算結果">
         <div class="headline">
           <div class="multiple">
@@ -383,6 +510,56 @@ button, input, select { font: inherit; color: inherit; }
       </section>
 
       <div id="cats" class="results"></div>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="panel-road" aria-labelledby="tab-road" hidden>
+        <section class="card">
+          <h3>実行ロードマップ</h3>
+          <p class="lead">チェックを入れた施策について、誰が・いつ・何をするかを月単位で表示します。担当を選ぶと、その人の作業だけが濃く表示されます。</p>
+          <div class="roles" id="road-roles"></div>
+          <div class="road-legend"><span>◆ 制度側で決まる期限・タイミング（目安）</span><span>■ バー：企業側・支援者が動く期間</span></div>
+          <div class="road-wrap"><div class="road" id="road"></div></div>
+          <div class="hint" id="road-note"></div>
+        </section>
+        <section class="card">
+          <h3>共通書類の取得タイミング</h3>
+          <p class="lead">複数の制度で同じ書類を使えるように、取得する月の目安を示します。発行後3か月以内などの有効期限がある書類は、まとめて使える申請をグループにしています。</p>
+          <div class="docs" id="docs"></div>
+        </section>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="panel-report" aria-labelledby="tab-report" hidden>
+        <section class="card">
+          <div class="btnrow noprint">
+            <button class="btn primary" id="btn-report-copy" type="button">レポートをコピー</button>
+            <button class="btn" id="btn-report-print" type="button">印刷・PDF保存</button>
+            <span class="hint">顧問の税理士・社労士の先生にそのまま渡せる形式です。</span>
+          </div>
+          <div class="report" id="report"></div>
+        </section>
+      </div>
+
+      <div class="tabpanel" role="tabpanel" id="panel-data" aria-labelledby="tab-data" hidden>
+        <section class="card">
+          <h3>保存した提案</h3>
+          <p class="lead">「提案を保存」を押すと、顧客情報・ヒアリング内容・試算結果を1行のデータとして保存します。スプレッドシートには「表形式でコピー」で貼り付けるか、CSVで取り込めます。</p>
+          <div class="btnrow">
+            <button class="btn primary" id="btn-data-copy" type="button">表形式でコピー</button>
+            <button class="btn" id="btn-data-csv" type="button">CSVをダウンロード</button>
+          </div>
+          <div class="tbl-wrap"><table class="tbl" id="data-table"></table></div>
+          <div class="hint">保存データはこのブラウザ内に残ります。共用のPCでは使い終わったら削除してください。</div>
+        </section>
+        <section class="card" id="gas-card">
+          <h3>Googleスプレッドシートへの自動送信</h3>
+          <p class="lead">Google Apps Script のウェブアプリURLを設定すると、「提案を保存」のたびにスプレッドシートへ1行追加します。設定手順はリポジトリの README と <code>gas/Code.gs</code> を参照してください。</p>
+          <div class="field">
+            <label for="gas-url">ウェブアプリURL</label>
+            <input type="url" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <div class="hint" id="gas-status"></div>
+        </section>
+      </div>
 
       <section class="foot">
         <h4>ご利用上の注意</h4>
@@ -701,15 +878,17 @@ button, input, select { font: inherit; color: inherit; }
   ];
 
   /* ---------- 状態 ---------- */
-  var DEFAULT_BASE = { industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, form: "corp", capital: 1000, prevpay: "", pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100 };
+  function isoDate(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function nextMonth() { var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+  var DEFAULT_BASE = { company: "", contact: "", sales: "", meetdate: "", start: "", industry: "manufacturing", year: "2026", emp: 10, fixed: 3, salary: 400, form: "corp", capital: 1000, prevpay: "", pref: "大阪府", minwage: 1250, region: "", corptax: 300, raise: 100 };
   var KEY = "chinage-sim-v2";
   var state = load();
 
-  function fresh() { return { base: Object.assign({}, DEFAULT_BASE), en: {}, p: {}, opts: { withsi: false, expected: false } }; }
+  function fresh() { return { base: Object.assign({}, DEFAULT_BASE, { meetdate: isoDate(new Date()), start: nextMonth() }), en: {}, p: {}, opts: { withsi: false, expected: false }, tab: "sim" }; }
   function load() {
     try {
       var s = JSON.parse(localStorage.getItem(KEY));
-      if (s && s.base) { var f = fresh(); f.base = Object.assign(f.base, s.base); f.en = s.en || {}; f.p = s.p || {}; f.opts = Object.assign(f.opts, s.opts || {}); return f; }
+      if (s && s.base) { var f = fresh(); f.base = Object.assign(f.base, s.base); f.en = s.en || {}; f.p = s.p || {}; f.opts = Object.assign(f.opts, s.opts || {}); f.tab = s.tab || "sim"; return f; }
     } catch (e) {}
     return fresh();
   }
@@ -790,6 +969,12 @@ button, input, select { font: inherit; color: inherit; }
     };
   }
 
+  var BASE_IDS = { company: "b-company", contact: "b-contact", sales: "b-sales", meetdate: "b-meetdate", start: "b-start", industry: "b-industry", form: "b-form", capital: "b-capital", prevpay: "b-prevpay", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
+  function refreshInputs() {
+    Object.keys(BASE_IDS).forEach(function (k) { $(BASE_IDS[k]).value = state.base[k] == null ? "" : state.base[k]; });
+    $("o-withsi").checked = !!state.opts.withsi; $("o-expected").checked = !!state.opts.expected;
+  }
+
   /* ---------- 描画（初回） ---------- */
   function buildForm() {
     var sel = $("b-industry");
@@ -797,9 +982,8 @@ button, input, select { font: inherit; color: inherit; }
     var ps = $("b-pref");
     PREFS.forEach(function (r) { var o = el("option", null, r[0]); o.value = r[0]; ps.appendChild(o); });
     $("btn-region-auto").addEventListener("click", function () { state.base.region = ""; $("b-region").value = ""; update(); });
-    var map = { industry: "b-industry", form: "b-form", capital: "b-capital", prevpay: "b-prevpay", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
-    Object.keys(map).forEach(function (k) {
-      var input = $(map[k]);
+    Object.keys(BASE_IDS).forEach(function (k) {
+      var input = $(BASE_IDS[k]);
       input.value = state.base[k];
       input.addEventListener("input", function () { state.base[k] = input.value; update(); });
     });
@@ -958,12 +1142,16 @@ button, input, select { font: inherit; color: inherit; }
     $("target-line").style.left = x + "px";
     $("target-label").style.left = x + "px";
     $("target-label").textContent = "目標 " + fmtN(TARGET) + "倍（" + fmtMan(R.cost * TARGET) + "）";
+
+    renderRoadmap(R);
+    renderReport(R);
   }
 
   /* ---------- サマリーのコピー ---------- */
   function summaryText() {
     var R = last, c = R.c;
     var lines = [];
+    if (state.base.company) lines.push(state.base.company + " 様");
     lines.push("【賃上げ原資シミュレーション】" + c.year + "年度 / " + c.pref + " / " + c.ind.label + " / 従業員" + c.emp + "人");
     lines.push((c.corp ? "法人・資本金" + fmtMan(c.capital) : "個人事業主") + (c.sme ? "（中小企業）" : ""));
     lines.push("地域別最低賃金：" + fmtN(c.region) + "円 / 事業場内最低賃金：" + fmtN(c.minWage) + "円");
@@ -987,33 +1175,446 @@ button, input, select { font: inherit; color: inherit; }
     clearTimeout(toast._t); toast._t = setTimeout(function () { t.hidden = true; }, 2200);
   }
 
-  $("btn-copy").addEventListener("click", function () {
-    var text = summaryText();
+  function copyText(text, okMsg, anchor) {
     var fallback = function () {
       var box = document.getElementById("copybox");
-      if (!box) { box = el("textarea", "copybox"); box.id = "copybox"; box.readOnly = true; box.setAttribute("aria-label", "提案サマリー"); document.querySelector(".summary").appendChild(box); }
+      if (!box) { box = el("textarea", "copybox"); box.id = "copybox"; box.readOnly = true; box.setAttribute("aria-label", "コピー用テキスト"); }
+      anchor.appendChild(box);
       box.value = text; box.focus(); box.select();
       toast("自動コピーできないため、表示したテキストを選択しました");
     };
     try {
-      navigator.clipboard.writeText(text).then(function () { toast("提案サマリーをコピーしました"); }, fallback);
+      navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fallback);
     } catch (e) { fallback(); }
-  });
+  }
+  $("btn-copy").addEventListener("click", function () { copyText(summaryText(), "提案サマリーをコピーしました", document.querySelector(".summary")); });
 
   $("btn-reset").addEventListener("click", function () {
-    state = fresh();
-    Object.keys(state.base).forEach(function (k) {
-      var ids = { industry: "b-industry", form: "b-form", capital: "b-capital", prevpay: "b-prevpay", year: "b-year", pref: "b-pref", emp: "b-emp", fixed: "b-fixed", salary: "b-salary", minwage: "b-minwage", region: "b-region", corptax: "b-corptax", raise: "b-raise" };
-      $(ids[k]).value = state.base[k];
-    });
-    $("o-withsi").checked = false; $("o-expected").checked = false;
+    var tab = state.tab;
+    state = fresh(); state.tab = tab;
+    refreshInputs();
     update(); toast("初期値に戻しました");
   });
+
+  /* ---------- 実行ロードマップ・専門家連携 ---------- */
+  var ROLES = {
+    client: { label: "お客様", color: "var(--r-client)" },
+    us: { label: "当社", color: "var(--r-us)" },
+    tax: { label: "税理士", color: "var(--r-tax)" },
+    sr: { label: "社労士", color: "var(--r-sr)" },
+    gov: { label: "制度側", color: "var(--ink)" }
+  };
+
+  // 申請などで使う共通書類。valid: 発行後の有効月数（0は期限なし）
+  var DOCS = {
+    touki: { name: "履歴事項全部証明書", valid: 3 },
+    nouzei: { name: "納税証明書", valid: 3 },
+    kessan: { name: "直近2期分の決算書", valid: 0 },
+    chingin: { name: "賃金台帳", valid: 0 },
+    meibo: { name: "労働者名簿・出勤簿", valid: 0 },
+    kisoku: { name: "就業規則・賃金規程", valid: 0 },
+    gbiz: { name: "gBizIDプライム（電子申請用アカウント）", valid: 0 }
+  };
+
+  // steps: [担当, 内容, 開始月(着手月=0), 期間(月)]。担当 gov は制度側の期限（期間なし）
+  // apply: 書類を使う申請の月 / docs: 使う書類 / tax・sr: 先生への確認事項
+  var FLOW = {
+    gyomu: {
+      apply: 0, docs: ["chingin", "meibo", "kisoku"],
+      steps: [["sr", "交付申請書の作成・提出（申請代行）", 0, 1], ["us", "導入設備の選定・見積取得の支援", 0, 1], ["gov", "交付決定", 1],
+        ["client", "事業場内最低賃金の引上げ", 1, 1], ["client", "設備の発注・導入・支払い", 2, 2], ["sr", "事業実績報告・支給申請", 4, 1],
+        ["gov", "助成金の入金", 6], ["tax", "助成金の会計処理・圧縮記帳の検討", 6, 1]],
+      tax: "助成金で取得する設備について、圧縮記帳の適用可否と助成金収入の計上時期をご確認ください。",
+      sr: "事業場内最低賃金の引上げ方法（就業規則・賃金規程の改定）と、申請書類の作成・提出をお願いします。"
+    },
+    cu_seishain: {
+      apply: 0, docs: ["chingin", "meibo", "kisoku"],
+      steps: [["sr", "キャリアアップ計画の作成・提出", 0, 1], ["sr", "就業規則に正社員転換制度を規定", 0, 1], ["client", "対象者を正社員へ転換（賃金3%以上増）", 1, 1],
+        ["client", "転換後6か月分の賃金支払い", 1, 6], ["sr", "第1期 支給申請", 7, 2], ["gov", "第1期 支給決定・入金", 10], ["sr", "第2期 支給申請", 13, 2],
+        ["tax", "助成金収入の計上時期の確認", 10, 1]],
+      tax: "キャリアアップ助成金の受給に伴う収入の計上時期をご確認ください。",
+      sr: "キャリアアップ計画の提出、正社員転換制度の就業規則への規定、支給申請をお願いします。"
+    },
+    cu_chingin: {
+      apply: 0, docs: ["chingin", "kisoku"],
+      steps: [["sr", "キャリアアップ計画の作成・提出", 0, 1], ["sr", "賃金規定の改定（3%以上）", 1, 1], ["client", "改定後の賃金で6か月支払い", 1, 6],
+        ["sr", "支給申請", 7, 2], ["gov", "支給決定・入金", 10]],
+      sr: "有期・パートの賃金規定を3%以上増額改定する手続きと、支給申請をお願いします。"
+    },
+    jinzai: {
+      apply: 0, docs: ["chingin", "meibo"],
+      steps: [["sr", "職業訓練実施計画届の提出（開始1か月前まで）", 0, 1], ["us", "AI研修カリキュラムの設計", 0, 1], ["client", "研修の実施・受講", 2, 2],
+        ["sr", "支給申請（訓練終了から2か月以内）", 4, 2], ["gov", "助成金の入金", 7], ["tax", "研修費を教育訓練費として集計", 4, 1]],
+      tax: "研修費を教育訓練費として集計し、賃上げ促進税制の上乗せ要件（教育訓練費の増加）に使えるかご確認ください。",
+      sr: "職業訓練実施計画届の提出と、訓練終了後の支給申請をお願いします。"
+    },
+    it_ai: {
+      apply: 1, docs: ["touki", "nouzei", "kessan", "gbiz"],
+      steps: [["us", "gBizIDプライム取得・SECURITY ACTION宣言の支援", 0, 1], ["us", "申請書の作成（IT導入支援事業者と共同申請）", 0, 2], ["gov", "公募締切（目安）", 1],
+        ["gov", "交付決定", 2], ["client", "ツールの契約・導入・支払い", 2, 2], ["us", "事業実績報告", 4, 1], ["gov", "補助金の入金", 6],
+        ["tax", "補助金収入の計上・圧縮記帳の検討", 6, 1], ["client", "効果報告（導入後の賃上げ・生産性）", 12, 1]],
+      tax: "補助金で導入するソフトウェア等について、圧縮記帳の適用可否と補助金収入の計上時期をご確認ください。"
+    },
+    jizokuka: {
+      apply: 1, docs: ["touki", "nouzei", "kessan", "gbiz"],
+      steps: [["us", "経営計画・補助事業計画の作成", 0, 1], ["client", "商工会議所・商工会で事業支援計画書（様式4）を取得", 0, 1], ["sr", "賃金引上げ特例の要件確認（最低賃金+50円）", 0, 1],
+        ["gov", "申請締切（目安）", 1], ["gov", "採択発表", 4], ["client", "販路開拓の実施・支払い", 4, 4], ["us", "実績報告", 8, 1],
+        ["gov", "補助金の入金", 10], ["tax", "補助金収入の計上", 10, 1]],
+      tax: "補助金収入の計上時期をご確認ください。",
+      sr: "賃金引上げ特例を使う場合、事業場内最低賃金の引上げ要件を満たせるかご確認ください。"
+    },
+    shoryoku_cat: {
+      apply: 1, docs: ["touki", "nouzei", "kessan", "gbiz"],
+      steps: [["us", "カタログ製品の選定・販売事業者との共同申請", 0, 2], ["gov", "交付決定", 2], ["client", "製品の導入・支払い", 2, 2], ["us", "実績報告", 4, 1],
+        ["gov", "補助金の入金", 6], ["tax", "圧縮記帳の検討", 6, 1], ["client", "効果報告（3年間）", 12, 1]],
+      tax: "補助金で取得する設備について、圧縮記帳の適用可否と補助金収入の計上時期をご確認ください。"
+    },
+    shoryoku_gen: {
+      apply: 2, docs: ["touki", "nouzei", "kessan", "chingin", "gbiz"],
+      steps: [["us", "事業計画書の作成", 0, 2], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "設備の発注・導入（交付決定後）", 6, 6],
+        ["us", "実績報告", 12, 1], ["sr", "賃上げ要件の達成状況の確認", 12, 1], ["gov", "補助金の入金", 14], ["tax", "圧縮記帳・減価償却の処理", 14, 1]],
+      tax: "補助金で取得する設備について、圧縮記帳・減価償却の処理と補助金収入の計上時期をご確認ください。",
+      sr: "賃上げ要件（給与支給総額・事業場内最低賃金）の達成状況の確認をお願いします。"
+    },
+    monodukuri: {
+      apply: 2, docs: ["touki", "nouzei", "kessan", "chingin", "gbiz"],
+      steps: [["us", "事業計画書の作成", 0, 2], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "設備の発注・導入（交付決定後）", 6, 5],
+        ["us", "実績報告", 11, 1], ["sr", "給与支給総額・最低賃金の賃上げ要件の確認", 11, 1], ["gov", "補助金の入金", 13], ["tax", "圧縮記帳・減価償却の処理", 13, 1]],
+      tax: "補助金で取得する設備について、圧縮記帳・減価償却の処理と補助金収入の計上時期をご確認ください。",
+      sr: "賃上げ要件（給与支給総額の年平均成長率・事業場内最低賃金）の達成状況の確認をお願いします。"
+    },
+    shinjigyo: {
+      apply: 2, docs: ["touki", "nouzei", "kessan", "chingin", "gbiz"],
+      steps: [["us", "新事業の事業計画書の作成", 0, 2], ["gov", "公募締切（目安）", 2], ["gov", "採択発表", 5], ["client", "建物・設備等の発注・導入", 6, 8],
+        ["us", "実績報告", 14, 1], ["sr", "賃上げ要件の達成状況の確認", 14, 1], ["gov", "補助金の入金", 16], ["tax", "圧縮記帳・減価償却の処理", 16, 1]],
+      tax: "補助金で取得する建物・設備について、圧縮記帳・減価償却の処理と補助金収入の計上時期をご確認ください。",
+      sr: "賃上げ要件の達成状況の確認をお願いします。"
+    },
+    tax: {
+      docs: [],
+      steps: [["client", "賃上げの実施", 0, 1], ["sr", "給与等支給額の集計資料の作成", 10, 1], ["tax", "適用判定・申告書別表の作成", 11, 1], ["gov", "決算から2か月以内に申告（決算を12か月目と仮定）", 12]],
+      tax: "中小企業向け賃上げ促進税制の適用可否（給与等支給額の増加率）と、教育訓練費・くるみん等の上乗せ要件をご確認ください。",
+      sr: "給与等支給額の前年比較ができるよう、賃金台帳の集計にご協力ください。"
+    },
+    dc: {
+      docs: ["kisoku"],
+      steps: [["us", "制度設計・運営管理機関の選定", 0, 1], ["sr", "労使合意・規約作成・就業規則の改定", 1, 1], ["gov", "厚生局へ規約の承認申請", 2],
+        ["client", "従業員説明会・加入意思の確認", 2, 1], ["gov", "拠出開始（承認後）", 4], ["tax", "給与計算・年末調整の取扱い確認", 4, 1],
+        ["sr", "標準報酬月額の改定の確認", 4, 1]],
+      tax: "選択制確定拠出年金の導入に伴う、給与計算・源泉徴収・年末調整上の取扱いをご確認ください。",
+      sr: "労使合意・規約作成・就業規則の改定と、導入後の標準報酬月額の改定についてご確認ください。"
+    },
+    ai: {
+      docs: [],
+      steps: [["us", "業務の棚卸し・対象業務の選定", 0, 1], ["us", "AIワークフローの構築", 1, 2], ["client", "運用開始・定着", 3, 3], ["us", "効果測定・改善", 6, 1]]
+    }
+  };
+
+  var roadFilter = "all";
+  function startMonth() {
+    var m = /^(\d{4})-(\d{2})/.exec(state.base.start || "") || /^(\d{4})-(\d{2})/.exec(nextMonth());
+    return { y: +m[1], m: +m[2] };
+  }
+  function monthLabel(i, full) {
+    var s = startMonth(), t = s.m - 1 + i, y = s.y + Math.floor(t / 12), mm = t % 12 + 1;
+    return full || mm === 1 || i === 0 ? y + "/" + mm : mm + "月";
+  }
+  function activeRows(R) { return R.rows.filter(function (r) { return r.on && FLOW[r.item.id]; }); }
+  function catColor(id) { return CATS.filter(function (c) { return c.id === id; })[0].color; }
+
+  function renderRoadmap(R) {
+    var rows = activeRows(R);
+    var road = $("road"); road.textContent = "";
+    var n = 12;
+    rows.forEach(function (r) { FLOW[r.item.id].steps.forEach(function (st) { n = Math.max(n, st[2] + (st[3] || 1) + 1); }); });
+    n = Math.min(n, 18);
+    road.style.setProperty("--n", n);
+
+    var head = el("div", "rrow head");
+    head.appendChild(el("div", "rl", "施策・作業"));
+    var months = el("div", "months");
+    for (var i = 0; i < n; i++) months.appendChild(el("span", null, monthLabel(i)));
+    head.appendChild(months); road.appendChild(head);
+
+    if (!rows.length) { var em = el("div", "empty", "「提案・インパクト」タブで施策にチェックを入れると表示されます。"); em.style.padding = "16px"; road.appendChild(em); }
+    rows.forEach(function (r) {
+      var g = el("div", "rrow grp");
+      var gl = el("div", "rl"); var gi = el("i"); gi.style.background = catColor(r.item.cat); gl.appendChild(gi); gl.appendChild(document.createTextNode(r.item.name));
+      g.appendChild(gl); g.appendChild(el("div", "lane")); road.appendChild(g);
+      FLOW[r.item.id].steps.forEach(function (st) {
+        var who = st[0], role = ROLES[who];
+        var row = el("div", "rrow"); row.dataset.who = who;
+        var l = el("div", "rl");
+        var w = el("span", "rwho"); var wi = el("i"); wi.style.background = role.color; w.appendChild(wi); w.appendChild(document.createTextNode(role.label));
+        l.appendChild(w); l.appendChild(el("span", null, (who === "gov" ? "◆ " : "") + st[1]));
+        var lane = el("div", "lane");
+        if (st[2] < n) {
+          if (who === "gov") {
+            var d = el("div", "rdia"); d.style.left = ((st[2] + 0.5) / n * 100) + "%"; d.title = st[1] + "（" + monthLabel(st[2], true) + "）"; lane.appendChild(d);
+          } else {
+            var b = el("div", "rbar"); b.style.background = role.color;
+            b.style.left = (st[2] / n * 100) + "%"; b.style.width = (Math.min(st[3], n - st[2]) / n * 100) + "%";
+            b.title = role.label + "：" + st[1] + "（" + monthLabel(st[2], true) + "〜）"; lane.appendChild(b);
+          }
+        }
+        row.appendChild(l); row.appendChild(lane); road.appendChild(row);
+        if (roadFilter !== "all" && who !== roadFilter && who !== "gov") row.classList.add("dim");
+      });
+    });
+    $("road-note").textContent = "着手予定月 " + monthLabel(0, true) + " を起点にした目安です。公募スケジュールは公募回ごとに変わるため、確定したら実際の日付に合わせて調整してください。";
+    renderDocs(rows);
+  }
+
+  function renderDocs(rows) {
+    var box = $("docs"); box.textContent = "";
+    var use = {};
+    rows.forEach(function (r) {
+      var f = FLOW[r.item.id];
+      (f.docs || []).forEach(function (k) { (use[k] = use[k] || []).push({ name: r.item.name, m: f.apply || 0 }); });
+    });
+    var keys = Object.keys(DOCS).filter(function (k) { return use[k]; });
+    if (!keys.length) { box.appendChild(el("div", "empty", "選択中の施策では、共通で使う書類はありません。")); return; }
+    keys.forEach(function (k) {
+      var doc = DOCS[k], list = use[k].slice().sort(function (a, b) { return a.m - b.m; });
+      if (doc.valid) {
+        // 有効期限内にまとめて使える申請をグループ化
+        var groups = [], cur = null;
+        list.forEach(function (u) {
+          if (!cur || u.m - cur.m > doc.valid - 1) { cur = { m: u.m, names: [] }; groups.push(cur); }
+          cur.names.push(u.name);
+        });
+        groups.forEach(function (gp) {
+          var d = el("div", "doc");
+          d.appendChild(el("b", null, doc.name + "：" + monthLabel(gp.m, true) + " に取得"));
+          d.appendChild(el("span", null, (gp.names.length > 1 ? "1回の取得で " : "") + gp.names.join("・") + " の申請に使えます（発行後" + doc.valid + "か月以内）"));
+          box.appendChild(d);
+        });
+      } else {
+        var d = el("div", "doc");
+        d.appendChild(el("b", null, doc.name + "：" + monthLabel(list[0].m, true) + " までに準備"));
+        var names = list.map(function (u) { return u.name; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+        d.appendChild(el("span", null, (names.length > 1 ? "共通で使えます：" : "使う制度：") + names.join("・")));
+        box.appendChild(d);
+      }
+    });
+  }
+
+  function reportData(R) {
+    var rows = activeRows(R);
+    var by = { tax: [], sr: [], client: [], us: [] };
+    rows.forEach(function (r) {
+      var f = FLOW[r.item.id];
+      ["tax", "sr", "client", "us"].forEach(function (who) {
+        var tasks = f.steps.filter(function (st) { return st[0] === who; }).map(function (st) { return st[1] + "（" + monthLabel(st[2], true) + "〜）"; });
+        if (tasks.length || f[who]) by[who].push({ name: r.item.name, ask: f[who] || "", tasks: tasks });
+      });
+    });
+    return { rows: rows, by: by };
+  }
+
+  var WHO_TITLE = { tax: "顧問税理士の先生へのご確認・ご依頼", sr: "顧問社労士の先生へのご確認・ご依頼", client: "お客様にご対応いただくこと", us: "当社が担当すること" };
+
+  function renderReport(R) {
+    var box = $("report"); box.textContent = "";
+    var D = reportData(R), b = state.base;
+    var title = el("div");
+    var h = el("h3", null, "制度活用に関する専門家連携レポート"); title.appendChild(h);
+    title.appendChild(el("div", "meta", (b.company ? b.company + " 様　" : "") + "作成日 " + isoDate(new Date()) + (b.sales ? "　作成 " + b.sales : "")));
+    box.appendChild(title);
+    if (!D.rows.length) { box.appendChild(el("div", "empty", "「提案・インパクト」タブで施策にチェックを入れると作成されます。")); return; }
+    box.appendChild(el("div", "ask", "当社では、賃上げにあわせて下記の制度の活用を検討しています。制度によっては税務・労務の手続きが必要になるため、先生方にご確認・ご対応いただきたい事項をまとめました。当社の場合に適用できるか、ご意見をいただけますと幸いです。"));
+
+    var tw = el("div", "tbl-wrap"), t = el("table", "tbl");
+    var hr = el("tr"); ["検討中の制度", "区分", "概算額", "税理士", "社労士"].forEach(function (x, i) { hr.appendChild(el("th", i === 2 ? "r" : null, x)); }); t.appendChild(hr);
+    D.rows.forEach(function (r) {
+      var f = FLOW[r.item.id], tr = el("tr");
+      var has = function (who) { return f[who] || f.steps.some(function (st) { return st[0] === who; }) ? "○" : "—"; };
+      tr.appendChild(el("td", null, r.item.name));
+      tr.appendChild(el("td", null, CATS.filter(function (c) { return c.id === r.item.cat; })[0].name));
+      tr.appendChild(el("td", "r", fmtMan(r.amount)));
+      tr.appendChild(el("td", null, has("tax"))); tr.appendChild(el("td", null, has("sr")));
+      t.appendChild(tr);
+    });
+    tw.appendChild(t); box.appendChild(tw);
+
+    ["tax", "sr", "client", "us"].forEach(function (who) {
+      if (!D.by[who].length) return;
+      var sec = el("section");
+      var h4 = el("h4"); var i = el("i"); i.style.background = ROLES[who].color; h4.appendChild(i); h4.appendChild(document.createTextNode(WHO_TITLE[who]));
+      sec.appendChild(h4);
+      var ul = el("ul");
+      D.by[who].forEach(function (x) {
+        var li = el("li"); var strong = el("b", null, x.name); li.appendChild(strong);
+        if (x.ask) li.appendChild(el("div", null, x.ask));
+        if (x.tasks.length) li.appendChild(el("div", "meta", "作業の目安：" + x.tasks.join("、")));
+        ul.appendChild(li);
+      });
+      sec.appendChild(ul); box.appendChild(sec);
+    });
+    box.appendChild(el("div", "meta", "※ 助成金の申請書類の作成・提出代行は社会保険労務士の業務です。スケジュールは着手予定月を起点にした目安で、制度の要件・金額は最新の公募要領・支給要領でご確認ください。"));
+  }
+
+  function reportText() {
+    var R = last, D = reportData(R), b = state.base, L = [];
+    L.push("【制度活用に関する専門家連携レポート】");
+    if (b.company) L.push(b.company + " 様");
+    L.push("作成日 " + isoDate(new Date()) + (b.sales ? " / 作成 " + b.sales : ""));
+    L.push("");
+    L.push("当社では、賃上げにあわせて下記の制度の活用を検討しています。先生方にご確認・ご対応いただきたい事項をまとめました。");
+    L.push("");
+    L.push("■ 検討中の制度");
+    D.rows.forEach(function (r) { L.push("・" + r.item.name + "（概算 " + fmtMan(r.amount) + "）"); });
+    ["tax", "sr", "client", "us"].forEach(function (who) {
+      if (!D.by[who].length) return;
+      L.push(""); L.push("■ " + WHO_TITLE[who]);
+      D.by[who].forEach(function (x) {
+        L.push("・" + x.name + (x.ask ? "：" + x.ask : ""));
+        if (x.tasks.length) L.push("　作業の目安：" + x.tasks.join("、"));
+      });
+    });
+    L.push(""); L.push("※ 助成金の申請書類の作成・提出代行は社会保険労務士の業務です。スケジュール・金額は目安です。");
+    return L.join("\n");
+  }
+
+  /* ---------- 提案の保存・出力 ---------- */
+  var REC_KEY = "chinage-sim-records-v1", GAS_KEY = "chinage-sim-gas-url";
+  var inFrame = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  function loadRecs() { try { return JSON.parse(localStorage.getItem(REC_KEY)) || []; } catch (e) { return []; } }
+  function saveRecs(list) { try { localStorage.setItem(REC_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } }
+
+  var HEADERS = ["保存日時", "会社名", "ご担当者", "営業担当", "商談日", "着手予定月", "業種", "事業形態", "資本金(万円)", "都道府県", "従業員数", "有期・パート",
+    "平均年収(万円)", "事業場内最低賃金", "地域別最低賃金", "法人税額(万円)", "前年度給与総額(万円)", "賃上げ額(万円)", "年間固定費アップ(万円)",
+    "初年度インパクト(万円)", "倍率", "継続効果(万円/年)", "3年累計倍率", "採用施策"].concat(ITEMS.map(function (i) { return i.name + "(万円)"; }));
+
+  function man(yen) { return Math.round(yen / MAN * 10) / 10; }
+  function makeRecord() {
+    var R = compute(), c = R.c, b = state.base;
+    var row = [new Date().toLocaleString("ja-JP"), b.company, b.contact, b.sales, b.meetdate, b.start, c.ind.label, c.corp ? "法人" : "個人事業主",
+      c.corp ? num(b.capital, 0) : "", c.pref, c.emp, c.fixed, num(b.salary, 0), c.minWage, c.region, num(b.corptax, 0), c.payrollManual ? num(b.prevpay, 0) : "",
+      num(b.raise, 0), man(R.cost), man(R.year1), Math.round(R.mult * 10) / 10, man(R.annual), Math.round(R.mult3 * 10) / 10,
+      R.rows.filter(function (r) { return r.on; }).map(function (r) { return r.item.name; }).join(" / ")]
+      .concat(R.rows.map(function (r) { return r.on ? man(r.amount) : ""; }));
+    return { id: Date.now(), row: row, state: JSON.parse(JSON.stringify({ base: state.base, en: state.en, p: state.p, opts: state.opts })) };
+  }
+
+  function sendToSheet(rec) {
+    var url = "";
+    try { url = localStorage.getItem(GAS_KEY) || ""; } catch (e) {}
+    if (!url || inFrame) return;
+    try {
+      fetch(url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ headers: HEADERS, row: rec.row }) })
+        .then(function () { $("gas-status").textContent = rec.row[0] + " にスプレッドシートへ送信しました（受信結果はシート側で確認してください）。"; },
+          function () { $("gas-status").textContent = "スプレッドシートへの送信に失敗しました。URLとネットワーク接続を確認してください。"; });
+    } catch (e) {}
+  }
+
+  function saveProposal() {
+    if (!String(state.base.company || "").trim()) { toast("会社名を入力してください"); $("b-company").focus(); return; }
+    var rec = makeRecord(), list = loadRecs();
+    list.unshift(rec);
+    if (!saveRecs(list)) { toast("このブラウザでは保存できませんでした。「表形式でコピー」で控えてください"); return; }
+    renderData(); sendToSheet(rec);
+    toast(state.base.company + " の提案を保存しました");
+  }
+
+  function cellText(v) { return v == null ? "" : String(v); }
+  function toTSV(list) {
+    return [HEADERS].concat(list.map(function (r) { return r.row; })).map(function (row) {
+      return row.map(function (v) { return cellText(v).replace(/[\t\n\r]/g, " "); }).join("\t");
+    }).join("\n");
+  }
+  function toCSV(list) {
+    return [HEADERS].concat(list.map(function (r) { return r.row; })).map(function (row) {
+      return row.map(function (v) { var t = cellText(v); return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(",");
+    }).join("\r\n");
+  }
+
+  function renderData() {
+    var list = loadRecs(), t = $("data-table"); t.textContent = "";
+    $("data-count").textContent = list.length ? String(list.length) : "";
+    if (!list.length) { var tr0 = el("tr"); var td0 = el("td", "empty", "まだ保存した提案はありません。左で会社名などを入力し「提案を保存」を押してください。"); tr0.appendChild(td0); t.appendChild(tr0); return; }
+    var hr = el("tr"); ["保存日時", "会社名", "業種", "従業員", "初年度インパクト", "倍率", ""].forEach(function (x, i) { hr.appendChild(el("th", i >= 3 && i <= 5 ? "r" : null, x)); }); t.appendChild(hr);
+    list.forEach(function (rec) {
+      var r = rec.row, tr = el("tr");
+      tr.appendChild(el("td", null, r[0])); tr.appendChild(el("td", null, r[1])); tr.appendChild(el("td", null, r[6]));
+      tr.appendChild(el("td", "r", r[10] + "人")); tr.appendChild(el("td", "r", r[19] + "万円")); tr.appendChild(el("td", "r", r[20] + "倍"));
+      var ops = el("td"); ops.className = "noprint";
+      var lb = el("button", "linkbtn", "読み込む"); lb.type = "button";
+      lb.addEventListener("click", function () {
+        var tab = state.tab, f = fresh();
+        state = { base: Object.assign(f.base, rec.state.base), en: rec.state.en || {}, p: rec.state.p || {}, opts: Object.assign(f.opts, rec.state.opts || {}), tab: tab };
+        refreshInputs(); update(); setTab("sim"); toast(r[1] + " の提案を読み込みました");
+      });
+      var db = el("button", "linkbtn", "削除"); db.type = "button"; db.style.marginLeft = "12px";
+      db.addEventListener("click", function () {
+        if (db.dataset.armed !== "1") { db.dataset.armed = "1"; db.textContent = "もう一度押すと削除"; return; }
+        saveRecs(loadRecs().filter(function (x) { return x.id !== rec.id; })); renderData(); toast("削除しました");
+      });
+      ops.appendChild(lb); ops.appendChild(db); tr.appendChild(ops);
+      t.appendChild(tr);
+    });
+  }
+
+  function setTab(id) {
+    state.tab = id; save();
+    ["sim", "road", "report", "data"].forEach(function (k) {
+      $("tab-" + k).setAttribute("aria-selected", String(k === id));
+      $("panel-" + k).hidden = k !== id;
+    });
+    if (id === "sim") update();
+  }
+
+  function buildExtras() {
+    ["sim", "road", "report", "data"].forEach(function (k) { $("tab-" + k).addEventListener("click", function () { setTab(k); }); });
+    var roles = $("road-roles");
+    [["all", "すべて"], ["client", null], ["us", null], ["tax", null], ["sr", null]].forEach(function (x) {
+      var bt = el("button", "role-chip"); bt.type = "button"; bt.dataset.role = x[0];
+      if (x[0] !== "all") { var i = el("i"); i.style.background = ROLES[x[0]].color; bt.appendChild(i); }
+      bt.appendChild(document.createTextNode(x[1] || ROLES[x[0]].label + "の担当"));
+      bt.setAttribute("aria-pressed", String(x[0] === roadFilter));
+      bt.addEventListener("click", function () {
+        roadFilter = x[0];
+        Array.prototype.forEach.call(roles.children, function (c) { c.setAttribute("aria-pressed", String(c.dataset.role === roadFilter)); });
+        renderRoadmap(last);
+      });
+      roles.appendChild(bt);
+    });
+    $("btn-save").addEventListener("click", saveProposal);
+    $("btn-report-copy").addEventListener("click", function () { copyText(reportText(), "レポートをコピーしました", $("report")); });
+    $("btn-report-print").hidden = inFrame;
+    $("btn-report-print").addEventListener("click", function () { window.print(); });
+    $("btn-data-copy").addEventListener("click", function () {
+      var list = loadRecs();
+      if (!list.length) { toast("保存した提案がありません"); return; }
+      copyText(toTSV(list), "表形式でコピーしました。スプレッドシートに貼り付けてください", $("data-table").parentNode);
+    });
+    $("btn-data-csv").hidden = inFrame;
+    $("btn-data-csv").addEventListener("click", function () {
+      var list = loadRecs();
+      if (!list.length) { toast("保存した提案がありません"); return; }
+      var blob = new Blob(["﻿" + toCSV(list)], { type: "text/csv;charset=utf-8" });
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "提案データ_" + isoDate(new Date()) + ".csv";
+      document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    });
+    var gu = $("gas-url");
+    try { gu.value = localStorage.getItem(GAS_KEY) || ""; } catch (e) {}
+    gu.addEventListener("change", function () {
+      try { localStorage.setItem(GAS_KEY, gu.value.trim()); } catch (e) {}
+      $("gas-status").textContent = gu.value.trim() ? "URLを保存しました。次の「提案を保存」から送信します。" : "自動送信をオフにしました。";
+    });
+    if (inFrame) {
+      gu.disabled = true;
+      $("gas-status").textContent = "この公開ページからは外部へ送信できません。リポジトリの index.html をブラウザで直接開いて設定してください。";
+    }
+    renderData();
+    setTab(state.tab || "sim");
+  }
 
   window.addEventListener("resize", function () { update(); });
 
   buildForm();
   buildCats();
+  buildExtras();
   update();
 })();
 </script>
